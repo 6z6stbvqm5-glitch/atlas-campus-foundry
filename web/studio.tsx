@@ -1,0 +1,1616 @@
+import { t, LanguageSelect, localeTag } from "./i18n";
+import { DeleteProject, ExportProject } from "./project-actions";
+import { RequirementsEditor, emptyRequirements } from "./requirements-editor";
+import { FileHistory } from "./file-history";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  Link,
+  NavLink,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  Boxes,
+  Check,
+  ChevronRight,
+  Code2,
+  ExternalLink,
+  FileCode2,
+  Folder,
+  History,
+  GitBranch,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageCircle,
+  UserRound,
+  Package,
+  Play,
+  Plus,
+  RefreshCw,
+  Rocket,
+  Save,
+  Send,
+  Settings2,
+  ShieldCheck,
+  Square,
+  Terminal,
+  Trash2,
+  Upload,
+  WandSparkles,
+  MoveUpRight,
+  X,
+} from "lucide-react";
+import { api, post, useLoad } from "./api";
+import { Badge, Empty, Loading, Modal, Notice, useAction } from "./components";
+import {
+  ModuleExplorer,
+  ModuleDetail,
+  ModuleMentionInput,
+} from "./module-studio";
+const VisualBuilder = lazy(() =>
+  import("./visual-builder").then((m) => ({ default: m.VisualBuilder })),
+);
+import type {
+  ModuleManifest,
+  ProductSpec,
+  PublicUser,
+} from "../packages/contracts/src/index";
+type Project = {
+  id: string;
+  app_id: string;
+  name: string;
+  idea: string;
+  spec: ProductSpec;
+  updated_at: string;
+};
+type Job = {
+  id: string;
+  input: string;
+  status: string;
+  error: string | null;
+  project_id: string | null;
+  created_at: string;
+  result?: { summary?: string };
+};
+type Deployment = {
+  id: string;
+  app_id: string;
+  project_name: string;
+  status: string;
+  provider: string;
+  port: number;
+  created_at: string;
+  previous_id: string | null;
+};
+const formatDate = (value: string) =>
+  new Date(value).toLocaleString(localeTag(), {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+const kindNames = {
+  events: "活动与社团",
+  marketplace: "校园二手",
+  study: "学习搭子",
+  custom: "自定义产品",
+};
+const seedModules = {
+  events: ["events", "search", "groups"],
+  marketplace: ["content", "search", "chat", "media", "profiles"],
+  study: ["profiles", "groups", "chat", "campus", "search", "notifications"],
+  custom: ["identity", "content"],
+};
+export function Studio({
+  user,
+  onLogout,
+}: {
+  user: PublicUser;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const system = useLoad<{
+    llm: { configured: boolean; model: string | null };
+    deployment: { docker: boolean; provider: string };
+  }>("/api/system");
+  return (
+    <div className="studio">
+      <aside className={`sidebar ${open ? "open" : ""}`}>
+        <Link className="brand" to="/">
+          <span className="brand-symbol">
+            <MoveUpRight size={25} strokeWidth={3} />
+          </span>
+          <span>
+            atlas<small>{t("开发者工作台")}</small>
+          </span>
+        </Link>
+        <button
+          className="mobile-close icon-button"
+          aria-label={t("关闭导航")}
+          onClick={() => setOpen(false)}
+        >
+          <X />
+        </button>
+        <Link
+          className="primary create-link"
+          to="/create"
+          onClick={() => setOpen(false)}
+        >
+          <Plus size={18} />
+          {t("创建产品")}
+        </Link>
+        <nav onClick={() => setOpen(false)}>
+          <NavLink end to="/studio">
+            <LayoutDashboard size={18} />
+            {t("项目总览")}
+          </NavLink>
+          <NavLink to="/builder">
+            <WandSparkles size={18} />
+            AI Builder
+          </NavLink>
+          <NavLink to="/modules">
+            <Boxes size={18} />
+            {t("模块仓库")}
+          </NavLink>
+          <NavLink to="/compose">
+            <GitBranch size={18} />
+            {t("可视化编排")}
+          </NavLink>
+          <NavLink to="/deployments">
+            <Rocket size={18} />
+            {t("应用部署")}
+          </NavLink>
+          <NavLink to="/publisher">
+            <Upload size={18} />
+            {t("模块发布")}
+          </NavLink>
+          <NavLink to="/community">
+            <MessageCircle size={18} />
+            {t("创作者社区")}
+          </NavLink>
+          <NavLink to={`/creators/${user.id}`}>
+            <UserRound size={18} />
+            {t("我的主页")}
+          </NavLink>
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="connection">
+            <span
+              className={system.data?.llm.configured ? "dot" : "dot amber"}
+            />{" "}
+            {system.data?.llm.configured ? t("模型已连接") : t("模型待连接")}
+          </div>
+          <div className="user-row">
+            <span className="avatar">
+              {user.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span>
+              {user.name}
+              <small>
+                {user.role === "admin" ? t("平台管理员") : t("开发者")}
+              </small>
+            </span>
+            <button
+              className="icon-button"
+              title={t("退出登录")}
+              aria-label={t("退出登录")}
+              onClick={() => void post("/api/auth/logout").then(onLogout)}
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+      <div className="studio-body">
+        <header className="topbar">
+          <button
+            className="icon-button mobile-menu"
+            aria-label={t("打开导航")}
+            onClick={() => setOpen(true)}
+          >
+            <Menu />
+          </button>
+          <span>{t("个人工作空间")}</span>
+          <span className="topbar-right">
+            <LanguageSelect />
+            <span className="dot" />
+            {t("本地环境")}
+            <span className="version">v0.1</span>
+          </span>
+        </header>
+        <main className="workspace">
+          <Routes>
+            <Route path="/studio" element={<Dashboard />} />
+            <Route path="/create" element={<CreateProduct />} />
+            <Route path="/builder" element={<Builder />} />
+            <Route path="/modules" element={<Modules />} />
+            <Route path="/modules/:moduleId" element={<ModuleDetail />} />
+            <Route
+              path="/compose"
+              element={
+                <Suspense fallback={<Loading />}>
+                  <VisualBuilder user={user} />
+                </Suspense>
+              }
+            />
+            <Route path="/projects/:id" element={<ProjectWorkspace />} />
+            <Route path="/deployments" element={<DeploymentView />} />
+            <Route path="/publisher" element={<Publisher user={user} />} />
+            <Route
+              path="*"
+              element={
+                <Empty>
+                  {t("页面不存在。")}
+                  <Link to="/studio">{t("返回项目总览")}</Link>
+                </Empty>
+              }
+            />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+function Heading({
+  eyebrow,
+  title,
+  subtitle,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="page-heading">
+      <div>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      <div className="heading-actions">{children}</div>
+    </div>
+  );
+}
+function Dashboard() {
+  const [trash, setTrash] = useState(false);
+  const action = useAction();
+  const projects = useLoad<{ items: Project[] }>(
+      `/api/projects?trash=${trash}`,
+    ),
+    deployments = useLoad<{ items: Deployment[] }>("/api/deployments"),
+    jobs = useLoad<{ items: Job[] }>("/api/jobs");
+  return (
+    <>
+      <Heading
+        eyebrow="ATLAS STUDIO"
+        title={t("项目总览")}
+        subtitle={t("你的校园产品、共享能力与运行状态。")}
+      >
+        <button
+          className={trash ? "selected" : ""}
+          onClick={() => setTrash(!trash)}
+        >
+          <Trash2 size={17} />
+          {trash ? t("返回我的项目") : t("回收站")}
+        </button>
+        <Link className="primary" to="/create">
+          <Plus size={17} />
+          {t("新建项目")}
+        </Link>
+      </Heading>
+      <section className="metrics">
+        <div>
+          <Folder size={19} />
+          <span>
+            {t("产品项目")}
+            <strong>{projects.data?.items.length ?? "—"}</strong>
+          </span>
+        </div>
+        <div>
+          <Activity size={19} />
+          <span>
+            {t("运行中的应用")}
+            <strong>
+              {deployments.data?.items.filter((d) => d.status === "running")
+                .length ?? "—"}
+            </strong>
+          </span>
+        </div>
+        <div>
+          <GitBranch size={19} />
+          <span>
+            {t("开发任务")}
+            <strong>{jobs.data?.items.length ?? "—"}</strong>
+          </span>
+        </div>
+      </section>
+      <section>
+        <div className="section-head">
+          <h2>{trash ? t("回收站") : t("我的项目")}</h2>
+          <span className="muted">
+            {projects.data?.items.length ?? 0}
+            {t("个项目")}
+          </span>
+        </div>
+        {projects.error && <Notice>{projects.error}</Notice>}
+        {action.error && <Notice>{action.error}</Notice>}
+        {projects.loading ? (
+          <Loading />
+        ) : !projects.data?.items.length ? (
+          <Empty>
+            {trash ? t("回收站为空") : t("还没有项目。")}
+            <Link to="/create">
+              {t("创建第一个校园产品")}
+              <ArrowRight size={14} />
+            </Link>
+          </Empty>
+        ) : (
+          <div className="project-list">
+            {projects.data.items.map((p) => (
+              <div className="project-list-item" key={p.id}>
+                <Link
+                  to={trash ? "#" : `/projects/${p.id}`}
+                  onClick={(e) => {
+                    if (trash) e.preventDefault();
+                  }}
+                  className="project-row"
+                >
+                  <span className={`project-icon ${p.spec.kind}`}>
+                    <Package size={24} />
+                  </span>
+                  <div className="project-summary">
+                    <h3>{p.name}</h3>
+                    <p>{p.spec.description}</p>
+                    <div className="project-meta">
+                      <span>{t(kindNames[p.spec.kind])}</span>
+                      <span>
+                        {p.spec.modules.length}
+                        {t("个模块")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="project-right">
+                    <span>{formatDate(p.updated_at)}</span>
+                    <ChevronRight size={18} />
+                  </div>
+                </Link>
+                {trash ? (
+                  <button
+                    disabled={action.busy}
+                    onClick={() =>
+                      void action.run(async () => {
+                        await post(`/api/projects/${p.id}/restore`);
+                        await projects.refresh();
+                      })
+                    }
+                  >
+                    <RefreshCw size={16} />
+                    {t("恢复项目")}
+                  </button>
+                ) : (
+                  <DeleteProject
+                    id={p.id}
+                    name={p.name}
+                    onDeleted={async () => {
+                      await projects.refresh();
+                      await deployments.refresh();
+                      await jobs.refresh();
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <section className="recent-section">
+        <div className="section-head">
+          <h2>{t("最近执行")}</h2>
+          <Link to="/builder">
+            {t("全部任务")}
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+        {jobs.data?.items.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t("需求")}</th>
+                  <th>{t("状态")}</th>
+                  <th>{t("时间")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.data.items.slice(0, 5).map((j) => (
+                  <tr key={j.id}>
+                    <td>
+                      <Link to={`/builder?job=${j.id}`}>
+                        {j.input.slice(0, 70)}
+                      </Link>
+                    </td>
+                    <td>
+                      <Badge status={j.status} />
+                    </td>
+                    <td>{formatDate(j.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty>{t("暂无开发任务")}</Empty>
+        )}
+      </section>
+    </>
+  );
+}
+function CreateProduct() {
+  const [mode, setMode] = useState<"assembly" | "llm">("llm"),
+    [kind, setKind] = useState<ProductSpec["kind"]>("events"),
+    [selected, setSelected] = useState<string[]>(seedModules.events);
+  const registry = useLoad<{ items: ModuleManifest[] }>("/api/modules");
+  const action = useAction(),
+    navigate = useNavigate();
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    void action.run(async () => {
+      if (mode === "llm") {
+        const job = await post<{ id: string }>("/api/jobs", {
+          input: values.idea,
+        });
+        navigate(`/builder?job=${job.id}`);
+      } else {
+        const result = await post<{ project: Project }>("/api/projects", {
+          idea: values.idea,
+          spec: {
+            name: values.name,
+            description: values.idea,
+            kind,
+            modules: selected,
+            features: String(values.features || "")
+              .split("\n")
+              .filter(Boolean),
+            primaryColor:
+              kind === "marketplace"
+                ? "rose"
+                : kind === "study"
+                  ? "blue"
+                  : "green",
+          },
+        });
+        navigate(`/projects/${result.project.id}`);
+      }
+    });
+  }
+  return (
+    <>
+      <Heading eyebrow="NEW PRODUCT" title={t("创建校园产品")} />
+      <div className="create-layout">
+        <section>
+          <div className="tabs">
+            <button
+              className={mode === "llm" ? "selected" : ""}
+              onClick={() => setMode("llm")}
+            >
+              <WandSparkles size={16} />
+              {t("AI 开发")}
+            </button>
+            <button
+              className={mode === "assembly" ? "selected" : ""}
+              onClick={() => setMode("assembly")}
+            >
+              <Boxes size={16} />
+              {t("模块组装")}
+            </button>
+          </div>
+          {action.error && <Notice>{action.error}</Notice>}
+          <form className="product-form" onSubmit={submit}>
+            {mode === "assembly" && (
+              <label>
+                {t("产品名称")}
+                <input
+                  name="name"
+                  required
+                  minLength={2}
+                  maxLength={80}
+                  placeholder={t("例如：校园学习搭子")}
+                />
+              </label>
+            )}
+            <label>
+              {t("产品需求")}
+              <ModuleMentionInput name="idea" rows={7} />
+            </label>
+            {mode === "assembly" && (
+              <>
+                <label>
+                  {t("产品类型")}
+                  <select
+                    value={kind}
+                    onChange={(e) => {
+                      const value = e.target.value as ProductSpec["kind"];
+                      setKind(value);
+                      setSelected(seedModules[value]);
+                    }}
+                  >
+                    {Object.entries(kindNames).map(([k, n]) => (
+                      <option key={k} value={k}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("产品功能")}
+                  <textarea
+                    name="features"
+                    rows={3}
+                    placeholder={t("每行一项需求")}
+                  />
+                </label>
+                <fieldset>
+                  <legend>{t("安装模块")}</legend>
+                  <div className="module-checkboxes">
+                    {registry.data?.items
+                      .filter((m) => m.securityMetadata.review !== "pending")
+                      .map((m) => (
+                        <label
+                          className="check-row"
+                          key={`${m.moduleId}-${m.version}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(m.moduleId)}
+                            onChange={(e) =>
+                              setSelected(
+                                e.target.checked
+                                  ? [...selected, m.moduleId]
+                                  : selected.filter((id) => id !== m.moduleId),
+                              )
+                            }
+                          />
+                          <span>
+                            {t(m.name)}
+                            <small>{t(m.description)}</small>
+                          </span>
+                        </label>
+                      ))}
+                  </div>
+                </fieldset>
+              </>
+            )}
+            <button
+              className="primary"
+              disabled={
+                action.busy || (!selected.length && mode === "assembly")
+              }
+            >
+              {mode === "llm" ? <WandSparkles size={17} /> : <Plus size={17} />}{" "}
+              {action.busy
+                ? t("正在提交…")
+                : mode === "llm"
+                  ? t("启动 AI 开发")
+                  : t("创建并安装模块")}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+        </section>
+        <aside className="context-panel">
+          <span className="eyebrow">{t("执行环境")}</span>
+          <h3>{mode === "llm" ? t("AI 开发任务") : t("确定性模块组装")}</h3>
+          <SystemSummary />
+          <div className="rule" />
+          <p>
+            {mode === "llm"
+              ? t("模型未连接时，需求会保存为等待配置的任务。")
+              : t("依据所选能力生成项目和依赖；此模式不属于 AI 自主代码生成。")}
+          </p>
+        </aside>
+      </div>
+    </>
+  );
+}
+function SystemSummary() {
+  const system = useLoad<{
+    llm: { configured: boolean; model: string | null };
+    deployment: { docker: boolean; provider: string };
+  }>("/api/system");
+  return (
+    <dl className="definition-list">
+      <div>
+        <dt>{t("模型服务")}</dt>
+        <dd>
+          {system.data?.llm.configured ? system.data.llm.model : t("未连接")}
+        </dd>
+      </div>
+      <div>
+        <dt>{t("代码隔离环境")}</dt>
+        <dd>
+          {system.data?.deployment.docker
+            ? t("Docker 可用")
+            : t("Docker 不可用")}
+        </dd>
+      </div>
+      <div>
+        <dt>{t("本地应用运行")}</dt>
+        <dd>{t("平台共享模块")}</dd>
+      </div>
+    </dl>
+  );
+}
+function Builder() {
+  const navigate = useNavigate();
+  const jobs = useLoad<{ items: Job[] }>("/api/jobs", 3000);
+  const query = new URLSearchParams(location.search);
+  const [selected, setSelected] = useState(query.get("job") || "");
+  const projects = useLoad<{ items: Project[] }>("/api/projects");
+  const action = useAction();
+  useEffect(() => {
+    const requested = new URLSearchParams(location.search).get("job");
+    if (requested) setSelected(requested);
+  }, [location.search]);
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const values = Object.fromEntries(new FormData(form));
+    void action.run(async () => {
+      const job = await post<{ id: string }>("/api/jobs", {
+        input: values.input,
+        projectId: values.projectId || undefined,
+      });
+      setSelected(job.id);
+      navigate(`/builder?job=${job.id}`);
+      form.reset();
+      await jobs.refresh();
+    });
+  }
+  return (
+    <>
+      <Heading
+        eyebrow="PRODUCT AGENT"
+        title="AI Builder"
+        subtitle={t("需求、计划、工具执行与验证记录。")}
+      />
+      <div className="builder-layout">
+        <section className="job-list">
+          <h2>{t("开发任务")}</h2>
+          {jobs.error ? (
+            <Notice>{jobs.error}</Notice>
+          ) : jobs.loading ? (
+            <Loading />
+          ) : jobs.data?.items.length ? (
+            jobs.data.items.map((j) => (
+              <button
+                key={j.id}
+                className={`job-item ${selected === j.id ? "selected" : ""}`}
+                onClick={() => {
+                  setSelected(j.id);
+                  navigate(`/builder?job=${j.id}`);
+                }}
+              >
+                <span>{j.input.slice(0, 65)}</span>
+                <Badge status={j.status} />
+                <small>{formatDate(j.created_at)}</small>
+              </button>
+            ))
+          ) : (
+            <Empty>{t("暂无任务")}</Empty>
+          )}
+        </section>
+        <section className="builder-main">
+          {selected ? (
+            <JobDetail id={selected} />
+          ) : (
+            <Empty>{t("提交一个需求，开始开发任务")}</Empty>
+          )}
+          {action.error && <Notice>{action.error}</Notice>}
+          {projects.error && <Notice>{projects.error}</Notice>}
+          <form className="composer" onSubmit={submit}>
+            <label>
+              {t("关联项目")}
+              <select name="projectId">
+                <option value="">{t("创建新项目")}</option>
+                {projects.data?.items.map((p) => (
+                  <option value={p.id} key={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("新的需求")}
+              <ModuleMentionInput
+                key={query.get("modules") || "input"}
+                name="input"
+                rows={3}
+                seed={
+                  query.get("modules")
+                    ? `我想使用 +${query.get("modules")} `
+                    : ""
+                }
+              />
+            </label>
+            <button className="primary" disabled={action.busy}>
+              <Send size={16} />
+              {t("提交需求")}
+            </button>
+          </form>
+        </section>
+      </div>
+    </>
+  );
+}
+function JobDetail({ id }: { id: string }) {
+  const job = useLoad<{
+    job: Job;
+    events: {
+      id: number;
+      type: string;
+      payload: Record<string, unknown>;
+      created_at: string;
+    }[];
+  }>(`/api/jobs/${id}`, 2000);
+  const action = useAction();
+  if (job.loading) return <Loading />;
+  if (job.error) return <Notice>{job.error}</Notice>;
+  const data = job.data!;
+  return (
+    <div className="job-detail">
+      <div className="section-head">
+        <h2>{t("任务记录")}</h2>
+        <Badge status={data.job.status} />
+      </div>
+      <p className="requirement">{data.job.input}</p>
+      {data.job.error && (
+        <Notice kind="info">
+          {data.job.error === "LLM_UNCONFIGURED"
+            ? t("模型尚未连接。需求已经保存，可在配置完成后重试。")
+            : data.job.error}
+        </Notice>
+      )}
+      {action.error && <Notice>{action.error}</Notice>}
+      <div className="inline-actions">
+        <button
+          disabled={action.busy}
+          onClick={() =>
+            void action.run(async () => {
+              const retry = await post<{ id: string }>(`/api/jobs/${id}/retry`);
+              location.href = `/builder?job=${retry.id}`;
+            })
+          }
+        >
+          <RefreshCw size={15} />
+          {t("重试")}
+        </button>
+        {["running", "queued"].includes(data.job.status) && (
+          <button
+            onClick={() =>
+              void action.run(() => post(`/api/jobs/${id}/cancel`))
+            }
+          >
+            <Square size={15} />
+            {t("取消")}
+          </button>
+        )}
+        {data.job.project_id && (
+          <Link to={`/projects/${data.job.project_id}`}>
+            {t("打开项目")}
+            <ArrowRight size={15} />
+          </Link>
+        )}
+      </div>
+      <div className="timeline">
+        {data.events.map((event) => (
+          <div className="timeline-event" key={event.id}>
+            <span className="timeline-marker" />
+            <div>
+              <div className="event-heading">
+                <strong>
+                  {event.type === "tool_call"
+                    ? `工具 · ${event.payload.name}`
+                    : event.type === "tool_result"
+                      ? `执行结果 · ${event.payload.name}`
+                      : event.type === "requested"
+                        ? t("需求已保存")
+                        : event.type === "assistant"
+                          ? "Agent"
+                          : t("执行异常")}
+                </strong>
+                <time>{formatDate(event.created_at)}</time>
+              </div>
+              <pre>{JSON.stringify(event.payload, null, 2)}</pre>
+            </div>
+          </div>
+        ))}
+      </div>
+      {data.job.result?.summary && <p>{data.job.result.summary}</p>}
+    </div>
+  );
+}
+function Modules() {
+  return <ModuleExplorer />;
+}
+function ProjectWorkspace() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const project = useLoad<{
+    project: Project;
+    application: { id: string };
+    installs: { module_id: string; version: string }[];
+  }>(`/api/projects/${id}`);
+  const [tab, setTab] = useState("overview"),
+    [file, setFile] = useState(""),
+    [content, setContent] = useState("");
+  const [fileHash, setFileHash] = useState<string | null>(null),
+    [original, setOriginal] = useState(""),
+    [showHistory, setShowHistory] = useState(false);
+  const dirty = content !== original;
+  useEffect(() => {
+    if (!dirty) return;
+    const prevent = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", prevent);
+    return () => window.removeEventListener("beforeunload", prevent);
+  }, [dirty]);
+  const files = useLoad<{ items: { path: string; size: number }[] }>(
+    `/api/projects/${id}/files`,
+  );
+  const action = useAction();
+  if (project.loading) return <Loading />;
+  if (project.error) return <Notice>{project.error}</Notice>;
+  const data = project.data!;
+  return (
+    <>
+      <Link className="back-link" to="/">
+        <ArrowLeft size={15} />
+        {t("全部项目")}
+      </Link>
+      <Heading
+        eyebrow={t(kindNames[data.project.spec.kind])}
+        title={data.project.name}
+        subtitle={data.project.spec.description}
+      >
+        <ExportProject id={id!} />
+        <DeleteProject
+          id={id!}
+          name={data.project.name}
+          onDeleted={() => navigate("/studio")}
+        />
+        <Link className="button" to={`/compose?project=${id}`}>
+          <GitBranch size={16} />
+          {t("可视化编排")}
+        </Link>
+        <Link to="/builder" className="button">
+          <WandSparkles size={16} />
+          {t("继续开发")}
+        </Link>
+        <button
+          className="primary"
+          disabled={action.busy}
+          onClick={() =>
+            void action.run(async () => {
+              const result = await post<Deployment>(
+                `/api/projects/${id}/deploy`,
+              );
+              if (result.status !== "running")
+                throw new Error("部署失败，请查看部署日志");
+              setTab("deploy");
+            }, "应用已启动")
+          }
+        >
+          <Play size={16} />
+          {action.busy ? t("正在执行…") : t("创建预览")}
+        </button>
+      </Heading>
+      {action.error && <Notice>{action.error}</Notice>}
+      {action.message && <Notice kind="success">{action.message}</Notice>}
+      <div className="tabs">
+        <button
+          className={tab === "overview" ? "selected" : ""}
+          onClick={() => setTab("overview")}
+        >
+          <Folder size={16} />
+          {t("产品与模块")}
+        </button>
+        <button
+          className={tab === "files" ? "selected" : ""}
+          onClick={() => setTab("files")}
+        >
+          <FileCode2 size={16} />
+          {t("项目文件")}
+        </button>
+        <button
+          className={tab === "deploy" ? "selected" : ""}
+          onClick={() => setTab("deploy")}
+        >
+          <Rocket size={16} />
+          {t("预览与部署")}
+        </button>
+        <button
+          className={tab === "settings" ? "selected" : ""}
+          onClick={() => setTab("settings")}
+        >
+          <Settings2 size={16} />
+          {t("配置")}
+        </button>
+      </div>
+      {tab === "overview" && (
+        <div className="project-overview">
+          <SpecEditor project={data.project} refresh={project.refresh}>
+            <section className="project-capabilities">
+              <div className="section-head">
+                <h2>{t("已安装能力")}</h2>
+                <Link to="/modules">
+                  <Plus size={15} />
+                  {t("安装")}
+                </Link>
+              </div>
+              <div className="installed-list">
+                {data.installs.map((m) => (
+                  <div key={m.module_id}>
+                    <Boxes size={17} />
+                    <Link to={`/modules/${m.module_id}`}>{m.module_id}</Link>
+                    <code>{m.version}</code>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label={`卸载 ${m.module_id}`}
+                      title={`卸载 ${m.module_id}`}
+                      onClick={() =>
+                        void action.run(async () => {
+                          await post(`/api/projects/${id}/modules`, {
+                            modules: data.project.spec.modules.filter(
+                              (n) => n !== m.module_id,
+                            ),
+                          });
+                          await project.refresh();
+                        }, "安装方案已更新；依赖仍被需要的模块会保留")
+                      }
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  void action.run(async () => {
+                    await post(`/api/projects/${id}/modules/rollback`);
+                    await project.refresh();
+                  }, "模块版本已回滚")
+                }
+              >
+                <RefreshCw size={15} />
+                {t("回滚上次安装")}
+              </button>
+            </section>
+          </SpecEditor>
+        </div>
+      )}
+      {tab === "files" && (
+        <section className="file-editor">
+          <div className="file-tree">
+            <div className="section-head">
+              <h3>{t("文件")}</h3>
+              <button
+                className="icon-button"
+                title={t("新建文件")}
+                aria-label={t("新建文件")}
+                onClick={() => {
+                  if (dirty && !window.confirm(t("放弃未保存的文件修改？")))
+                    return;
+                  setFile("src/feature.ts");
+                  setContent("");
+                  setOriginal("");
+                  setFileHash(null);
+                }}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {files.data?.items.map((f) => (
+              <button
+                key={f.path}
+                className={f.path === file ? "selected" : ""}
+                disabled={action.busy}
+                onClick={() =>
+                  void action.run(async () => {
+                    if (dirty && !window.confirm(t("放弃未保存的文件修改？")))
+                      return;
+                    const version = await api<{
+                      content: string;
+                      hash: string;
+                    }>(
+                      `/api/projects/${id}/file?path=${encodeURIComponent(f.path)}`,
+                    );
+                    setContent(version.content);
+                    setOriginal(version.content);
+                    setFileHash(version.hash);
+                    setFile(f.path);
+                  })
+                }
+              >
+                <FileCode2 size={15} />
+                {f.path}
+              </button>
+            ))}
+          </div>
+          <div className="code-pane">
+            <div className="toolbar">
+              <input
+                aria-label={t("文件路径")}
+                value={file}
+                onChange={(e) => {
+                  setFile(e.target.value);
+                  setFileHash(null);
+                }}
+                placeholder="src/feature.ts"
+              />
+              <button
+                title={t("保存文件")}
+                aria-label={t("保存文件")}
+                disabled={!file || action.busy || file === "product.json"}
+                onClick={() =>
+                  void action.run(async () => {
+                    const result = await api<{ hash: string }>(
+                      `/api/projects/${id}/file`,
+                      {
+                        method: "PUT",
+                        body: JSON.stringify({
+                          path: file,
+                          content,
+                          expectedHash: fileHash,
+                        }),
+                      },
+                    );
+                    setFileHash(result.hash);
+                    setOriginal(content);
+                    await files.refresh();
+                  }, "文件已保存")
+                }
+              >
+                <Save size={16} />
+              </button>
+              <button
+                title={t("文件历史")}
+                aria-label={t("文件历史")}
+                disabled={!file || action.busy}
+                onClick={() => setShowHistory(true)}
+              >
+                <History size={16} />
+              </button>
+              <button
+                onClick={() =>
+                  void action.run(async () => {
+                    const result = await post<{ ok: boolean; stderr: string }>(
+                      `/api/projects/${id}/validate`,
+                      { kind: "build" },
+                    );
+                    if (!result.ok) throw new Error(result.stderr);
+                  }, "构建通过")
+                }
+              >
+                <Code2 size={16} />
+                {t("构建")}
+              </button>
+              <button
+                onClick={() =>
+                  void action.run(async () => {
+                    const result = await post<{ ok: boolean; stderr: string }>(
+                      `/api/projects/${id}/validate`,
+                      { kind: "test" },
+                    );
+                    if (!result.ok) throw new Error(result.stderr);
+                  }, "测试通过")
+                }
+              >
+                <Check size={16} />
+                {t("测试")}
+              </button>
+            </div>
+            <textarea
+              className="code-input"
+              spellCheck={false}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              aria-label={t("文件内容")}
+              readOnly={file === "product.json" || action.busy}
+            />
+            {file === "product.json" && (
+              <Notice kind="info">{t("产品配置由产品规格与画布管理")}</Notice>
+            )}
+            {dirty && <span className="muted">{t("未保存")}</span>}
+          </div>
+        </section>
+      )}
+      {showHistory && (
+        <FileHistory
+          projectId={id!}
+          path={file}
+          hash={fileHash}
+          canRestore={!dirty}
+          onClose={() => setShowHistory(false)}
+          onRestore={(text, hash) => {
+            setContent(text);
+            setOriginal(text);
+            setFileHash(hash);
+            void files.refresh();
+          }}
+        />
+      )}
+      {tab === "deploy" && <DeploymentView projectId={id} compact />}
+      {tab === "settings" && <EnvironmentSettings id={id!} />}
+    </>
+  );
+}
+function SpecEditor({
+  project,
+  refresh,
+  children,
+}: {
+  project: Project;
+  refresh: () => Promise<void>;
+  children: ReactNode;
+}) {
+  const action = useAction();
+  const [requirements, setRequirements] = useState(
+    project.spec.requirements ?? emptyRequirements,
+  );
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    void action.run(async () => {
+      await api(`/api/projects/${project.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          ...project.spec,
+          name: values.name,
+          description: values.description,
+          features: String(values.features).split("\n").filter(Boolean),
+          requirements,
+        }),
+      });
+      await refresh();
+    }, "产品规格已更新");
+  }
+  return (
+    <form className="product-spec-form" onSubmit={submit}>
+      <div className="spec-summary-layout">
+        <section>
+          <h2>{t("产品规格")}</h2>
+          <label>
+            {t("名称")}
+            <input
+              name="name"
+              defaultValue={project.name}
+              required
+              minLength={2}
+            />
+          </label>
+          <label>
+            {t("需求描述")}
+            <textarea
+              name="description"
+              defaultValue={project.spec.description}
+              required
+              minLength={5}
+              rows={4}
+            />
+          </label>
+          <label>
+            {t("功能清单")}
+            <textarea
+              name="features"
+              defaultValue={project.spec.features.join("\n")}
+              rows={4}
+            />
+          </label>
+        </section>
+        {children}
+      </div>
+      {action.error && <Notice>{action.error}</Notice>}
+      {action.message && <Notice kind="success">{action.message}</Notice>}
+      <RequirementsEditor
+        value={requirements}
+        onChange={setRequirements}
+        modules={project.spec.modules}
+      />
+      <div className="spec-save-bar">
+        <button className="primary" disabled={action.busy}>
+          <Save size={15} />
+          {t("保存规格")}
+        </button>
+      </div>
+    </form>
+  );
+}
+function EnvironmentSettings({ id }: { id: string }) {
+  const env = useLoad<{ items: { name: string }[] }>(`/api/projects/${id}/env`);
+  const action = useAction();
+  return (
+    <section className="settings-form">
+      <h2>{t("环境变量")}</h2>
+      {env.error && <Notice>{env.error}</Notice>}
+      <Notice kind="info">
+        {t("密钥加密保存，仅供隔离部署使用。本地共享模块不接收自定义密钥。")}
+      </Notice>
+      {env.data?.items.map((item) => (
+        <div className="env-row" key={item.name}>
+          <code>{item.name}</code>
+          <span>••••••••</span>
+          <button
+            className="icon-button"
+            title={t("删除变量")}
+            aria-label={`删除 ${item.name}`}
+            onClick={() =>
+              void action.run(async () => {
+                await api(`/api/projects/${id}/env/${item.name}`, {
+                  method: "DELETE",
+                });
+                await env.refresh();
+              })
+            }
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      ))}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const values = Object.fromEntries(new FormData(form));
+          void action.run(async () => {
+            await api(`/api/projects/${id}/env`, {
+              method: "PUT",
+              body: JSON.stringify(values),
+            });
+            form.reset();
+            await env.refresh();
+          }, "变量已保存");
+        }}
+      >
+        <label>
+          {t("变量名称")}
+          <input
+            name="name"
+            pattern="APP_[A-Z0-9_]+"
+            placeholder="APP_SERVICE_TOKEN"
+            required
+          />
+        </label>
+        <label>
+          {t("值")}
+          <input name="value" type="password" autoComplete="off" required />
+        </label>
+        {action.error && <Notice>{action.error}</Notice>}
+        <button className="primary" disabled={action.busy}>
+          <Save size={16} />
+          {t("保存变量")}
+        </button>
+      </form>
+    </section>
+  );
+}
+function DeploymentView({
+  projectId,
+  compact = false,
+}: {
+  projectId?: string;
+  compact?: boolean;
+}) {
+  const records = useLoad<{ items: Deployment[] }>(
+    `/api/deployments${projectId ? `?projectId=${projectId}` : ""}`,
+    4000,
+  );
+  const [logs, setLogs] = useState<string | null>(null),
+    [health, setHealth] = useState("");
+  const action = useAction();
+  const visibleRecords =
+    records.data?.items.filter((d) => d.status !== "deleted") ?? [];
+  return (
+    <>
+      {!compact && (
+        <Heading
+          eyebrow="APPLICATION HOSTING"
+          title={t("应用部署")}
+          subtitle={t("本地运行实例、版本记录与健康状态。")}
+        />
+      )}
+      {action.error && <Notice>{action.error}</Notice>}
+      {health && <Notice kind="info">{health}</Notice>}
+      {records.error ? (
+        <Notice>{records.error}</Notice>
+      ) : records.loading ? (
+        <Loading />
+      ) : visibleRecords.length ? (
+        <div className="deployment-list">
+          {visibleRecords.map((d) => (
+            <article className="deployment-row" key={d.id}>
+              <div className="deployment-info">
+                <Rocket size={21} />
+                <div>
+                  <h3>{d.project_name}</h3>
+                  <small>
+                    {d.id.slice(0, 8)} · {d.provider} ·{" "}
+                    {formatDate(d.created_at)}
+                  </small>
+                </div>
+                <Badge status={d.status} />
+              </div>
+              <div className="inline-actions">
+                {d.status === "running" && (
+                  <a
+                    className="button primary"
+                    href={`http://app-${d.app_id}.localhost:${d.port}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink size={15} />
+                    {t("打开应用")}
+                  </a>
+                )}
+                <button
+                  title={t("查看日志")}
+                  onClick={() =>
+                    void action.run(async () =>
+                      setLogs(
+                        (
+                          await api<{ logs: string }>(
+                            `/api/deployments/${d.id}/logs`,
+                          )
+                        ).logs,
+                      ),
+                    )
+                  }
+                >
+                  <Terminal size={15} />
+                  {t("日志")}
+                </button>
+                <button
+                  title={t("健康检查")}
+                  aria-label={`健康检查 ${d.id.slice(0, 8)}`}
+                  onClick={() =>
+                    void action.run(async () => {
+                      const result = await api<{ healthy: boolean }>(
+                        `/api/deployments/${d.id}/health`,
+                      );
+                      setHealth(
+                        `${d.project_name}：${result.healthy ? "健康检查通过" : "服务当前不可达"}`,
+                      );
+                    })
+                  }
+                >
+                  <Activity size={16} />
+                </button>
+                <button
+                  title={t("重新部署")}
+                  aria-label={`重新部署 ${d.id.slice(0, 8)}`}
+                  disabled={action.busy}
+                  onClick={() =>
+                    void action.run(async () => {
+                      await post(`/api/deployments/${d.id}/restart`);
+                      await records.refresh();
+                    })
+                  }
+                >
+                  <RefreshCw size={16} />
+                </button>
+                {d.status === "running" && (
+                  <button
+                    title={t("停止应用")}
+                    aria-label={`停止 ${d.id.slice(0, 8)}`}
+                    onClick={() =>
+                      void action.run(async () => {
+                        await post(`/api/deployments/${d.id}/stop`);
+                        await records.refresh();
+                      })
+                    }
+                  >
+                    <Square size={15} />
+                  </button>
+                )}
+                {d.previous_id && (
+                  <button
+                    disabled={action.busy}
+                    onClick={() =>
+                      void action.run(async () => {
+                        await post(`/api/deployments/${d.id}/rollback`);
+                        await records.refresh();
+                      })
+                    }
+                  >
+                    <GitBranch size={15} />
+                    {t("回滚")}
+                  </button>
+                )}
+                <button
+                  title={t("移除实例，保留数据")}
+                  aria-label={`移除 ${d.id.slice(0, 8)}`}
+                  onClick={() =>
+                    void action.run(async () => {
+                      await api(`/api/deployments/${d.id}`, {
+                        method: "DELETE",
+                      });
+                      await records.refresh();
+                    })
+                  }
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <Empty>{t("暂无部署。在项目中创建预览以启动应用。")}</Empty>
+      )}
+      {logs !== null && (
+        <Modal title={t("部署日志")} onClose={() => setLogs(null)}>
+          <pre className="log-view">{logs || "暂时没有日志"}</pre>
+        </Modal>
+      )}
+    </>
+  );
+}
+function Publisher({ user }: { user: PublicUser }) {
+  const projects = useLoad<{ items: Project[] }>("/api/projects"),
+    pending = useLoad<{
+      items: {
+        module_id: string;
+        version: string;
+        manifest: ModuleManifest;
+        recipe: unknown;
+      }[];
+    }>("/api/modules/pending");
+  const action = useAction();
+  return (
+    <>
+      <Heading
+        eyebrow="MODULE LIFECYCLE"
+        title={t("模块发布")}
+        subtitle={t("从项目能力提取契约，经审核后供其他应用安装。")}
+      />
+      <div className="publisher-layout">
+        <section>
+          <h2>{t("提取项目能力")}</h2>
+          {projects.error && <Notice>{projects.error}</Notice>}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const values = Object.fromEntries(new FormData(e.currentTarget));
+              void action.run(async () => {
+                await post(`/api/projects/${values.projectId}/extract`, {
+                  moduleId: values.moduleId,
+                  name: values.name,
+                  version: values.version,
+                  sourceFile: values.sourceFile,
+                });
+                await pending.refresh();
+              }, "已提取模块，等待管理员审核");
+            }}
+          >
+            <label>
+              {t("源项目")}
+              <select name="projectId" required>
+                <option value="">{t("选择项目")}</option>
+                {projects.data?.items.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("契约文件路径")}
+              <input
+                name="sourceFile"
+                required
+                placeholder="features/waitlist.json"
+              />
+            </label>
+            <label>
+              {t("模块标识")}
+              <input
+                name="moduleId"
+                required
+                pattern="[a-z][a-z0-9-]{1,63}"
+                placeholder="study-waitlist"
+              />
+            </label>
+            <label>
+              {t("模块名称")}
+              <input name="name" required placeholder={t("学习小组候补")} />
+            </label>
+            <label>
+              {t("版本")}
+              <input
+                name="version"
+                required
+                pattern="[0-9]+\.[0-9]+\.[0-9]+"
+                defaultValue="1.0.0"
+              />
+            </label>
+            {action.error && <Notice>{action.error}</Notice>}
+            {action.message && <Notice kind="success">{action.message}</Notice>}
+            <button className="primary" disabled={action.busy}>
+              <Upload size={16} />
+              {t("提取并提交审核")}
+            </button>
+          </form>
+        </section>
+        <section>
+          <h2>{t("待审核版本")}</h2>
+          {pending.error ? (
+            <Notice>{pending.error}</Notice>
+          ) : pending.loading ? (
+            <Loading />
+          ) : pending.data?.items.length ? (
+            pending.data.items.map((m) => (
+              <article
+                className="review-item"
+                key={`${m.module_id}-${m.version}`}
+              >
+                <h3>{m.manifest.name}</h3>
+                <code>
+                  {m.module_id}@{m.version}
+                </code>
+                <details>
+                  <summary>{t("查看契约与权限")}</summary>
+                  <pre>
+                    {JSON.stringify(
+                      { manifest: m.manifest, recipe: m.recipe },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
+                {user.role === "admin" && (
+                  <button
+                    disabled={action.busy}
+                    onClick={() =>
+                      void action.run(async () => {
+                        await post(`/api/modules/${m.module_id}/approve`, {
+                          version: m.version,
+                        });
+                        await pending.refresh();
+                      }, "模块已审核并发布")
+                    }
+                  >
+                    <ShieldCheck size={16} />
+                    {t("审核并发布")}
+                  </button>
+                )}
+              </article>
+            ))
+          ) : (
+            <Empty>{t("没有等待审核的模块")}</Empty>
+          )}
+          <div className="rule" />
+          <p className="muted">
+            {t(
+              "当前发布范围：经过验证的容量与 FIFO 候补契约。自定义可执行模块暂不开放发布。",
+            )}
+          </p>
+        </section>
+      </div>
+    </>
+  );
+}

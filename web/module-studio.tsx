@@ -1,0 +1,920 @@
+import { t } from "./i18n";
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bell,
+  BookOpen,
+  Boxes,
+  Check,
+  ChevronRight,
+  Code2,
+  Database,
+  GitBranch,
+  LayoutGrid,
+  List,
+  MessageCircle,
+  Plus,
+  Search,
+  ShieldCheck,
+  Users,
+  Workflow,
+  Store,
+  ShoppingBag,
+  Package,
+  Receipt,
+  Truck,
+  CalendarClock,
+  CalendarDays,
+  Star,
+  TicketPercent,
+  Heart,
+  ChartColumn,
+  Contact,
+  UserRound,
+  PanelsTopLeft,
+  GraduationCap,
+  Image,
+  type LucideIcon,
+} from "lucide-react";
+import type { ModuleManifest } from "../packages/contracts/src/index";
+import { moduleReferences } from "../packages/modules/src/composition";
+import { post, useLoad } from "./api";
+import { Empty, Loading, Notice, useAction } from "./components";
+import { FieldInput, RecordModule } from "./record-module";
+import { FoundationPreview } from "./foundation-preview";
+import { CommercePreview } from "./commerce";
+import { CommunityPreview } from "./community";
+
+export const categoryLabels: Record<string, string> = {
+  foundation: "基础能力",
+  commerce: "商业经营",
+  community: "用户社区",
+  campus: "校园功能",
+  scenario: "校园功能",
+  connector: "连接自动化",
+  presentation: "展示组件",
+  extension: "社区扩展",
+};
+const moduleIcons: Record<string, LucideIcon> = {
+  "merchant-storefront": Store,
+  "product-catalog": ShoppingBag,
+  "stock-inventory": Package,
+  "sales-orders": Receipt,
+  "order-fulfillment": Truck,
+  "service-booking": CalendarClock,
+  "transaction-reviews": Star,
+  "discount-coupons": TicketPercent,
+  "product-favorites": Heart,
+  "merchant-analytics": ChartColumn,
+  "creator-profiles": UserRound,
+  "discussion-forum": MessageCircle,
+  "product-showcase": PanelsTopLeft,
+  "member-directory": Contact,
+  profiles: UserRound,
+  events: CalendarDays,
+  campus: GraduationCap,
+  media: Image,
+  search: Search,
+};
+export function ModuleIcon({
+  module,
+  size = 22,
+}: {
+  module: Pick<ModuleManifest, "moduleId" | "category" | "tags">;
+  size?: number;
+}) {
+  const Icon =
+    moduleIcons[module.moduleId] ??
+    (module.category === "commerce"
+      ? Store
+      : module.category === "connector"
+        ? Workflow
+        : module.category === "presentation"
+          ? LayoutGrid
+          : module.moduleId === "chat"
+            ? MessageCircle
+            : module.moduleId === "notifications"
+              ? Bell
+              : module.moduleId === "identity"
+                ? ShieldCheck
+                : module.tags.includes("课程学习")
+                  ? BookOpen
+                  : module.moduleId === "groups"
+                    ? Users
+                    : Boxes);
+  return (
+    <span className={`module-glyph ${module.category}`}>
+      <Icon size={size} />
+    </span>
+  );
+}
+export function ModuleExplorer() {
+  const registry = useLoad<{ items: ModuleManifest[] }>("/api/modules");
+  const [query, setQuery] = useState(""),
+    [category, setCategory] = useState("all"),
+    [tag, setTag] = useState("all"),
+    [view, setView] = useState("grid");
+  const modules = registry.data?.items || [];
+  const unique = modules.filter(
+    (m, i) => modules.findIndex((a) => a.moduleId === m.moduleId) === i,
+  );
+  const tags = [...new Set(unique.flatMap((m) => m.tags))];
+  const filtered = unique.filter(
+    (m) =>
+      (category === "all" ||
+        (category === "campus"
+          ? ["campus", "scenario"].includes(m.category)
+          : category === "extension"
+            ? m.securityMetadata.review !== "platform"
+            : m.category === category)) &&
+      (tag === "all" || m.tags.includes(tag)) &&
+      `${m.name} ${t(m.name)} ${m.moduleId} ${t(m.description)} ${m.description} ${m.aliases.join(" ")} ${m.tags.join(" ")}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  return (
+    <div className="module-explorer">
+      <div className="section-head module-page-heading">
+        <div>
+          <span className="eyebrow">MODULE LIBRARY</span>
+          <h1>{t("模块仓库")}</h1>
+          <p className="muted">
+            {
+              unique.filter((m) => m.securityMetadata.review === "platform")
+                .length
+            }{" "}
+            {t("个内置模块 ·")}{" "}
+            {
+              unique.filter((m) => m.securityMetadata.review !== "platform")
+                .length
+            }{" "}
+            {t("个社区模块")}
+          </p>
+        </div>
+        <Link className="button primary" to="/compose">
+          <GitBranch size={17} />
+          {t("可视化编排")}
+        </Link>
+      </div>
+      <div
+        className="module-category-tabs"
+        role="tablist"
+        aria-label={t("模块分类")}
+      >
+        {[
+          "all",
+          "commerce",
+          "community",
+          "foundation",
+          "campus",
+          "connector",
+          "presentation",
+          "extension",
+        ].map((id) => (
+          <button
+            role="tab"
+            aria-selected={category === id}
+            className={category === id ? "selected" : ""}
+            key={id}
+            onClick={() => setCategory(id)}
+          >
+            {id === "all" ? t("全部模块") : t(categoryLabels[id])}
+          </button>
+        ))}
+      </div>
+      <div className="toolbar module-filters">
+        <div className="search-input">
+          <Search size={18} />
+          <input
+            aria-label={t("搜索模块")}
+            placeholder={t("搜索名称、能力、+模块名")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value.replace(/^\+/, ""))}
+          />
+        </div>
+        <select
+          aria-label={t("按领域筛选")}
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+        >
+          <option value="all">{t("全部领域")}</option>
+          {tags.map((tag) => (
+            <option key={tag} value={tag}>
+              {t(tag)}
+            </option>
+          ))}
+        </select>
+        <span className="muted">
+          {filtered.length}
+          {t("个结果")}
+        </span>
+        <div className="segmented">
+          <button
+            title={t("网格")}
+            aria-label={t("网格")}
+            className={view === "grid" ? "selected" : ""}
+            onClick={() => setView("grid")}
+          >
+            <LayoutGrid size={17} />
+          </button>
+          <button
+            title={t("列表")}
+            aria-label={t("列表")}
+            className={view === "list" ? "selected" : ""}
+            onClick={() => setView("list")}
+          >
+            <List size={17} />
+          </button>
+        </div>
+      </div>
+      {registry.loading && <Loading />}
+      {registry.error && <Notice>{registry.error}</Notice>}
+      <div className={view === "grid" ? "catalog-grid" : "catalog-list"}>
+        {filtered.map((module) => (
+          <article className="catalog-card" key={module.moduleId}>
+            <Link
+              to={`/modules/${module.moduleId}`}
+              className="catalog-card-main"
+            >
+              <div className="catalog-card-top">
+                <ModuleIcon module={module} />
+                <span className="category-caption">
+                  {t(categoryLabels[module.category])}
+                </span>
+              </div>
+              <h3>{t(module.name)}</h3>
+              <p>{t(module.description)}</p>
+              <div className="catalog-tags">
+                {module.tags.slice(0, 2).map((tag) => (
+                  <span key={tag}>{t(tag)}</span>
+                ))}
+              </div>
+            </Link>
+            <footer>
+              <code>+{module.moduleId}</code>
+              <Link
+                title={`${t("编排")}${t(module.name)}`}
+                aria-label={`${t("编排")}${t(module.name)}`}
+                to={`/compose?add=${module.moduleId}`}
+                className="icon-button"
+              >
+                <Plus size={17} />
+              </Link>
+              <Link
+                title={`${t("查看")}${t(module.name)}`}
+                aria-label={`${t("查看")}${t(module.name)}`}
+                to={`/modules/${module.moduleId}`}
+                className="icon-button"
+              >
+                <ChevronRight size={17} />
+              </Link>
+            </footer>
+          </article>
+        ))}
+      </div>
+      {!registry.loading && !filtered.length && (
+        <Empty>{t("没有匹配的模块")}</Empty>
+      )}
+    </div>
+  );
+}
+export function ModuleDetail() {
+  const { moduleId } = useParams(),
+    registry = useLoad<{ items: ModuleManifest[] }>("/api/modules");
+  const projects = useLoad<{
+    items: { id: string; name: string; spec: { modules: string[] } }[];
+  }>("/api/projects");
+  const [tab, setTab] = useState("preview"),
+    [project, setProject] = useState("");
+  const action = useAction(),
+    module = registry.data?.items.find((m) => m.moduleId === moduleId);
+  if (registry.loading) return <Loading />;
+  if (!module) return <Notice>{t("模块不存在或无访问权限")}</Notice>;
+  const endpoint = module.recordDefinition
+    ? `/api/modules/${module.moduleId}/records`
+    : (
+        {
+          identity: "/api/auth/register",
+          chat: "/api/conversations",
+          notifications: "/api/notifications",
+          media: "/api/uploads",
+          search: "/api/entities?q=关键词",
+          campus: "/api/campus/contracts",
+        } as Record<string, string>
+      )[module.moduleId] || "/api/entities";
+  return (
+    <div className="module-detail-page">
+      <Link className="back-link" to="/modules">
+        <ArrowLeft size={16} />
+        {t("模块仓库")}
+      </Link>
+      <div className="module-detail-heading">
+        <ModuleIcon module={module} size={30} />
+        <div>
+          <div className="inline-actions">
+            <span className="category-caption">
+              {t(categoryLabels[module.category])}
+            </span>
+            <span className="muted">v{module.version}</span>
+          </div>
+          <h1>{t(module.name)}</h1>
+          <p>{t(module.description)}</p>
+        </div>
+        <div className="detail-actions">
+          <Link
+            className="button primary"
+            to={`/compose?add=${module.moduleId}`}
+          >
+            <Plus size={16} />
+            {t("加入画布")}
+          </Link>
+          <Link className="button" to={`/builder?modules=${module.moduleId}`}>
+            <Code2 size={16} />
+            {t("+ 引用模块")}
+          </Link>
+        </div>
+      </div>
+      <div className="module-detail-layout">
+        <section>
+          <div className="tabs">
+            {[
+              ["preview", "界面预览"],
+              ["interfaces", "接口与数据"],
+              ["dependencies", "依赖与权限"],
+            ].map(([id, name]) => (
+              <button
+                key={id}
+                className={tab === id ? "selected" : ""}
+                onClick={() => setTab(id)}
+              >
+                {t(name)}
+              </button>
+            ))}
+          </div>
+          {tab === "preview" && (
+            <div className="module-preview-frame">
+              <div className="preview-chrome">
+                <span />
+                <span />
+                <span />
+                <code>{t(module.name)}</code>
+              </div>
+              <div className="module-preview-body">
+                {module.category === "community" ? (
+                  <CommunityPreview
+                    key={module.moduleId}
+                    moduleId={module.moduleId}
+                  />
+                ) : module.category === "commerce" ? (
+                  <CommercePreview key={module.moduleId} module={module} />
+                ) : module.recordDefinition ? (
+                  <RecordModule key={module.moduleId} module={module} preview />
+                ) : (
+                  <CapabilityPreview module={module} />
+                )}
+              </div>
+            </div>
+          )}
+          {tab === "interfaces" && (
+            <div className="interface-panel">
+              <h2>{t("连接接口")}</h2>
+              <div className="interface-diagram">
+                <div>
+                  <small>{t("输入")}</small>
+                  <strong>
+                    {module.category === "connector"
+                      ? t("记录事件 / 上游结果")
+                      : module.recordDefinition
+                        ? t("账号 + 表单字段")
+                        : t("用户操作")}
+                  </strong>
+                </div>
+                <ArrowRight />
+                <div>
+                  <ModuleIcon module={module} />
+                  <strong>{t(module.name)}</strong>
+                </div>
+                <ArrowRight />
+                <div>
+                  <small>{t("输出")}</small>
+                  <strong>
+                    {module.category === "presentation"
+                      ? t("交互界面")
+                      : module.category === "connector"
+                        ? t("条件结果 / 受控动作")
+                        : module.category === "commerce"
+                          ? t("业务记录 / 交易状态")
+                          : module.category === "community"
+                            ? t("公开资料 / 社区内容")
+                            : t("记录 + 状态 + 事件")}
+                  </strong>
+                </div>
+              </div>
+              {["commerce", "community"].includes(module.category) ? (
+                <div className="commerce-interfaces">
+                  <h3>{t("业务 API")}</h3>
+                  {module.backendExports.map((endpoint) => (
+                    <code key={endpoint}>{endpoint}</code>
+                  ))}
+                  <p>
+                    {module.category === "commerce"
+                      ? t(
+                          "身份由当前应用会话提供。金额以整数分存储，订单关联商品与买卖双方；库存扣减、优惠核销和取消恢复在数据库事务中执行。",
+                        )
+                      : t(
+                          "公开主页只展示用户填写的资料，不暴露登录邮箱。发帖和产品发布需要登录，编辑仅限作者本人，删除允许作者或应用管理员。",
+                        )}
+                  </p>
+                  <p>
+                    {t(
+                      "画布中使用「依赖接口」连接已有契约。业务接口只允许在当前应用的数据空间内访问。",
+                    )}
+                  </p>
+                </div>
+              ) : module.recordDefinition ? (
+                <>
+                  <h3>{t("数据字段")}</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t("名称")}</th>
+                        <th>{t("字段键")}</th>
+                        <th>{t("类型")}</th>
+                        <th>{t("约束")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{t(module.recordDefinition.titleLabel)}</td>
+                        <td>title</td>
+                        <td>text</td>
+                        <td>{t("必填，160 字符")}</td>
+                      </tr>
+                      {module.recordDefinition.fields.map((field) => (
+                        <tr key={field.key}>
+                          <td>{t(field.label)}</td>
+                          <td>
+                            <code>{field.key}</code>
+                          </td>
+                          <td>{field.type}</td>
+                          <td>
+                            {field.options
+                              ?.map((option) => t(option))
+                              .join(" / ") ||
+                              t(field.required ? "必填" : "选填")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="endpoint-list">
+                    {[
+                      ["GET", "", "读取与搜索"],
+                      ["POST", "", "创建记录"],
+                      ["GET", "/:id", "读取详情"],
+                      ["PATCH", "/:id", "更新 / 状态 / 归档"],
+                    ].map(([method, suffix, label]) => (
+                      <details key={method + suffix}>
+                        <summary>
+                          <b>{method}</b>
+                          <code>
+                            {endpoint}
+                            {suffix}
+                          </code>
+                          <span>{t(label)}</span>
+                        </summary>
+                        <pre>
+                          {JSON.stringify(
+                            method === "GET"
+                              ? {
+                                  query: {
+                                    q: "",
+                                    status: "",
+                                    contextId: "optional UUID",
+                                  },
+                                  response: "items + counts / record",
+                                }
+                              : {
+                                  title: module.recordDefinition!.titleLabel,
+                                  data: Object.fromEntries(
+                                    module.recordDefinition!.fields.map((f) => [
+                                      f.key,
+                                      f.type,
+                                    ]),
+                                  ),
+                                  status: module.recordDefinition!.statuses,
+                                  contextId: "optional parent UUID",
+                                },
+                            null,
+                            2,
+                          )}
+                        </pre>
+                      </details>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3>
+                    {["connector", "presentation"].includes(module.category)
+                      ? t("编排契约")
+                      : t("API 入口")}
+                  </h3>
+                  <code>
+                    {["connector", "presentation"].includes(module.category)
+                      ? module.providedInterfaces.join(" · ")
+                      : endpoint}
+                  </code>
+                  {module.configurationFields.map((field) => (
+                    <p key={field.key}>
+                      <strong>{t(field.label)}</strong> <code>{field.key}</code>{" "}
+                      · {field.type}
+                    </p>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+          {tab === "dependencies" && (
+            <div className="interface-panel">
+              <h2>{t("依赖模块")}</h2>
+              {Object.keys(module.dependencies).length ? (
+                Object.entries(module.dependencies).map(([id, version]) => (
+                  <Link
+                    className="dependency-row"
+                    key={id}
+                    to={`/modules/${id}`}
+                  >
+                    <Boxes size={18} />
+                    {registry.data!.items.find((m) => m.moduleId === id)
+                      ?.name || id}
+                    <code>{version}</code>
+                    <ArrowRight size={16} />
+                  </Link>
+                ))
+              ) : (
+                <p>{t("无额外依赖")}</p>
+              )}
+              <h3>{t("权限")}</h3>
+              {module.requiredPermissions.map((permission) => (
+                <p key={permission}>
+                  <ShieldCheck size={15} /> <code>{permission}</code>
+                </p>
+              ))}
+              <h3>{t("运行方式")}</h3>
+              <p>
+                {module.recordDefinition
+                  ? t("标准数据模块，所有写入进行字段验证；仅创建者可修改。")
+                  : t("平台受控的共享实现。")}
+              </p>
+              <p>
+                {module.recordDefinition?.visibility === "owner"
+                  ? t("记录仅所属账号可读取。")
+                  : t("应用之间使用独立数据库。")}
+              </p>
+              <details>
+                <summary>{t("完整模块契约")}</summary>
+                <pre>{JSON.stringify(module, null, 2)}</pre>
+              </details>
+            </div>
+          )}
+        </section>
+        <aside className="module-detail-aside">
+          <h3>{t("安装模块")}</h3>
+          <label>
+            {t("目标项目")}
+            <select
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+            >
+              <option value="">{t("选择项目")}</option>
+              {projects.data?.items.map((p) => (
+                <option value={p.id} key={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {action.error && <Notice>{action.error}</Notice>}
+          {action.message && <Notice kind="success">{action.message}</Notice>}
+          <button
+            className="primary"
+            disabled={
+              !project ||
+              action.busy ||
+              module.securityMetadata.review === "pending"
+            }
+            onClick={() =>
+              void action.run(async () => {
+                const current = projects.data!.items.find(
+                  (p) => p.id === project,
+                )!;
+                await post(`/api/projects/${project}/modules`, {
+                  modules: [
+                    ...new Set([...current.spec.modules, module.moduleId]),
+                  ],
+                });
+                await projects.refresh();
+              }, "模块及依赖已安装")
+            }
+          >
+            <Plus size={16} />
+            {t("安装到项目")}
+          </button>
+          <hr />
+          <dl>
+            <dt>{t("引用标识")}</dt>
+            <dd>
+              <code>+{module.moduleId}</code>
+            </dd>
+            <dt>{t("许可证")}</dt>
+            <dd>{module.license}</dd>
+            <dt>{t("实现")}</dt>
+            <dd>
+              {module.recordDefinition
+                ? t("结构化业务模块")
+                : module.category === "connector"
+                  ? t("受控连接节点")
+                  : module.category === "presentation"
+                    ? t("数据驱动组件")
+                    : t("共享基础能力")}
+            </dd>
+          </dl>
+          <Link to={`/compose?add=${module.moduleId}`}>
+            {t("配置连接")}
+            <ArrowRight size={15} />
+          </Link>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function CapabilityPreview({ module }: { module: ModuleManifest }) {
+  const [settings, setSettings] = useState<Record<string, unknown>>({}),
+    [message, setMessage] = useState(""),
+    [messages, setMessages] = useState(["欢迎加入校园交流"]),
+    [done, setDone] = useState(false);
+  if (
+    [
+      "events",
+      "groups",
+      "profiles",
+      "content",
+      "search",
+      "media",
+      "campus",
+    ].includes(module.moduleId)
+  )
+    return <FoundationPreview module={module} />;
+  if (["connector", "presentation"].includes(module.category))
+    return (
+      <div className="capability-preview">
+        <span className="muted">{t("组件预览 · 未连接应用数据")}</span>
+        <div className="connection-preview">
+          <span className="port-dot" />
+          <div>
+            <ModuleIcon module={module} />
+            <h3>{t(module.name)}</h3>
+          </div>
+          <span className="port-dot output" />
+        </div>
+        {module.configurationFields.map((field) => (
+          <FieldInput
+            key={field.key}
+            field={field}
+            value={settings[field.key]}
+            onChange={(v) => setSettings({ ...settings, [field.key]: v })}
+          />
+        ))}
+        <Link className="button" to={`/compose?add=${module.moduleId}`}>
+          {t("在画布配置")}
+          <ArrowRight size={16} />
+        </Link>
+      </div>
+    );
+  return (
+    <div className="capability-preview">
+      <small className="muted">{t("交互示例 · 不向服务器提交")}</small>
+      <h2>{t(module.name)}</h2>
+      {module.moduleId === "chat" ? (
+        <>
+          <div className="sample-messages">
+            {messages.map((m, i) => (
+              <p key={i}>{m}</p>
+            ))}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (message.trim()) setMessages([...messages, message]);
+              setMessage("");
+            }}
+          >
+            <input
+              aria-label={t("预览消息")}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={t("输入消息")}
+            />
+            <button className="primary">{t("发送")}</button>
+          </form>
+        </>
+      ) : module.moduleId === "identity" ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setDone(true);
+          }}
+        >
+          <label>
+            {t("邮箱")}
+            <input type="email" required placeholder="student@example.edu" />
+          </label>
+          <label>
+            {t("密码")}
+            <input type="password" required minLength={10} />
+          </label>
+          <button className="primary">{t("预览登录")}</button>
+          {done && (
+            <Notice kind="info">{t("表单校验通过。此预览未创建会话。")}</Notice>
+          )}
+        </form>
+      ) : module.moduleId === "notifications" ? (
+        <button className="preview-notification" onClick={() => setDone(!done)}>
+          <Bell size={21} />
+          <span>
+            {t("你的活动报名已记录")}
+            <small>{done ? t("已读") : t("未读")}</small>
+          </span>
+          {done && <Check size={18} />}
+        </button>
+      ) : (
+        <>
+          <div className="interface-diagram">
+            <Database />
+            <div>
+              <strong>{t(module.name)}</strong>
+              <p>{t(module.description)}</p>
+            </div>
+            <ArrowRight />
+          </div>
+          <label>
+            {module.moduleId === "search" ? t("搜索内容") : t("名称")}
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={t(module.name)}
+            />
+          </label>
+          <button onClick={() => setDone(true)}>
+            {t("预览")}
+            {module.moduleId === "search" ? t("搜索") : t("提交")}
+          </button>
+          {done && (
+            <p className="preview-notification">
+              {message || module.name}
+              {t("· 本页示例")}
+            </p>
+          )}
+          <Link to={`/compose?add=${module.moduleId}`}>
+            {t("创建实际运行实例")}
+            <ArrowRight size={15} />
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function ModuleMentionInput({
+  name,
+  seed = "",
+  rows = 4,
+  onChange,
+  label,
+}: {
+  name: string;
+  seed?: string;
+  rows?: number;
+  onChange?: (value: string) => void;
+  label?: string;
+}) {
+  const registry = useLoad<{ items: ModuleManifest[] }>("/api/modules"),
+    [value, setValue] = useState(seed),
+    [open, setOpen] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    onChange?.(value);
+  }, [value, onChange]);
+  const modules =
+    registry.data?.items.filter(
+      (m) => m.securityMetadata.review !== "pending",
+    ) || [];
+  const token = value.match(/\+([^\s+]*)$/)?.[1];
+  const suggestions = modules
+    .filter((m) =>
+      `${m.name} ${t(m.name)} ${m.moduleId} ${m.aliases.join(" ")}`
+        .toLowerCase()
+        .includes((token || "").toLowerCase()),
+    )
+    .slice(0, 8);
+  const references = moduleReferences(value, modules);
+  useEffect(() => {
+    const form = ref.current?.form;
+    const reset = () => {
+      setValue("");
+      setOpen(false);
+    };
+    form?.addEventListener("reset", reset);
+    return () => form?.removeEventListener("reset", reset);
+  }, []);
+  function add(id: string) {
+    setValue(
+      token !== undefined
+        ? value.replace(/\+[^\s+]*$/, `+${id} `)
+        : `${value}${value ? " " : ""}+${id} `,
+    );
+    setOpen(false);
+    ref.current?.focus();
+  }
+  return (
+    <div className="mention-input">
+      <textarea
+        aria-label={label}
+        ref={ref}
+        name={name}
+        value={value}
+        required
+        minLength={5}
+        maxLength={12000}
+        rows={rows}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setOpen(/\+[^\s+]*$/.test(e.target.value));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setOpen(false);
+          if (open && e.key === "ArrowDown") {
+            e.preventDefault();
+            (
+              e.currentTarget.parentElement?.querySelector(
+                ".mention-option",
+              ) as HTMLButtonElement
+            )?.focus();
+          }
+        }}
+        placeholder={t("例如：校园失物平台 +失物招领 +聊天 +通知")}
+      />
+      <div className="mention-footer">
+        <div className="reference-chips">
+          {references.moduleIds.map((id) => (
+            <span key={id}>
+              +{t(modules.find((m) => m.moduleId === id)?.name || id)}
+            </span>
+          ))}
+          {references.unknown.map((id) => (
+            <span className="unresolved" key={id}>
+              {t("未识别：")}
+              {id}
+            </span>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="icon-button"
+          title={t("引用模块")}
+          aria-label={t("引用模块")}
+          onClick={() => setOpen(!open)}
+        >
+          <Plus size={18} />
+        </button>
+      </div>
+      {open && (
+        <div
+          className="mention-menu"
+          role="listbox"
+          aria-label={t("选择引用模块")}
+        >
+          {suggestions.map((m) => (
+            <button
+              className="mention-option"
+              type="button"
+              key={m.moduleId}
+              onClick={() => add(m.moduleId)}
+            >
+              <ModuleIcon module={m} size={16} />
+              <span>
+                {t(m.name)}
+                <small>+{m.moduleId}</small>
+              </span>
+            </button>
+          ))}
+          {!suggestions.length && <p>{t("没有匹配模块")}</p>}
+        </div>
+      )}
+    </div>
+  );
+}

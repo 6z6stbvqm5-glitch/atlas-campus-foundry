@@ -1,0 +1,37 @@
+# Decisions
+
+- 2026-10-12: add optional structured requirements without rewriting historical projects. Role/model/scenario descriptions are intent; no automatic pass status or hidden execution of user-supplied schemas.
+- Extend the existing campus module with relational tables and public contracts instead of inflating the module count. Preserve legacy generic records; never infer official school identities or fabricate coordinates.
+- Require expected content hashes for external source writes. Preserve audit-backed revisions and implement restore as a new write. Keep one control writer until distributed leases exist.
+- Return whole-file hashes alongside bounded Agent read pages; keep every tool response valid JSON. Invalidate validation evidence before potentially partial mutations.
+- Keep directory management authority on the server; UI ownership must be available on each paginated record, not inferred from another list's first page.
+
+- Latest user preference: remove the complete homepage module section, including recommendations, count and heading. Keep the Atlas scene, navigation and creation entry; use the actual module library for discovery.
+- Use complete OS CJK font families with real 400/700 weights instead of a 616-glyph partial subset. i18next changes labels and module metadata while preserving canonical values, user content and form state.
+- Make visual creation start with a design request. A restricted design-only Agent can propose a validated plan; users review the product view and optionally open technical wiring. Absent model configuration remains visibly BLOCKED.
+- Treat project deletion as reversible trash. Stop instances, cancel jobs, preserve storage/history and require explicit redeployment after restoration. Serialize create/restore quotas with the account row lock and archive/restore with the app deployment lock.
+- Export a bounded, owner-only standalone source ZIP with pinned lockfile and fresh data. Explicitly exclude control-plane state/secrets and do not automatically run custom workspace code. Exported Compose forwards runtime DB/email/origin settings; cloud testing awaits Docker.
+- Wait for Canvas initialization before enabling editing so delayed draft data cannot replace user input. Fit the technical graph only after its container is visible.
+- Use TypeScript with an explicit shared module contract and a modular control plane.
+- Research code is read as data; repositories without a license are reference-only.
+- Prefer PostgreSQL semantics. Evaluate PGlite for real durable local Windows execution and PostgreSQL server adapter for deployment.
+- Generated code execution must be denied when the required isolated runner is unavailable.
+- Keep paid services and production changes behind explicit user configuration; collect dependencies in docs/USER_ACTION_REQUIRED.md.
+- Use kernel-lifetime local storage locks rather than stale heartbeat leases, so an unresponsive database owner cannot be mistaken for an offline source.
+- Restore local backups to a new directory, retain terminal lifecycle history, and require explicit redeployment. Include empty PostgreSQL directories and the vault key; reject unsupported remote/container storage instead of silently omitting data.
+- Extend to 80 contracts using 50 distinct typed domain collections on one SQL/authorization/UI engine, with 12 bounded connectors and 8 display modules. Do not count empty placeholders or claim official university/payment integrations.
+- Treat visual composition as a real declarative development workflow, distinct from template copying and live LLM programming. Local execution accepts only shipped actions; arbitrary generated code still requires a verified isolated runner.
+- Parse +module references deterministically before model calls and retain them in job events and module selection constraints.
+- Reject private-to-shared graph paths, stale uninstalled targets, cyclic graphs and oversize specifications before mutation. Validate embedding with node/depth memoization.
+- Follow the user's Atlas art direction on the homepage; use compact, quiet product surfaces for repeated work. Git-cloned taste-skill at 18dfc928b135629e0eddfdd445a06400d04ed439 after functional acceptance. Apply compatible advice without global installers or overriding accessibility and repository rules.
+- Keep API request limits intact while excluding matched static GET asset routes. Ship homepage catalog summaries at build time, local font subsets, mobile image variants and HTTP compression.
+- Expand commercial products with 10 transactional commerce modules and 4 reusable community modules while preserving the 80 earlier contracts. Do not relabel simple record collections as payment or marketplace engines.
+- Mount the same forum/profile/showcase backend and frontend in Atlas and generated apps. Keep account stores, databases and sessions separate; directory visibility requires deliberately saving a public profile.
+- Use offline settlement until a real payment provider, webhook verification, reconciliation and refund flows exist. Orders and coupons operate on integer cents and atomic stock reservations; no funds movement is claimed.
+- Require product intent alongside Canvas version 2. Resolve and draw dependencies, separate visual lanes and reject unsupported ports/disconnected automation before saving. Keep generic record automation away from private order/inventory mutations.
+- Apply graph replacements and module installations in one database transaction. Never validate a partially pruned old graph while saving an already validated replacement.
+- Keep homepage bitmap movement subtle and pause it offscreen or in hidden tabs; honor reduced-motion preferences. Avoid overlay controls that intercept Canvas handles.
+
+## 2026-10-12: Readable technical Canvas and specification layout
+
+Technical graphs open at a readable scale; fitting every node is an explicit overview action. Mount React Flow only in its visible view and reserve a separate minimap footer to avoid intercepting editing gestures. Keep port dimensions fixed. Agent proposals and manual initialization share compositionLayer; the original campus/profile/event/group services appear in the business lane while catalog compatibility remains intact. Existing saved coordinates are not silently rearranged. Structured specs use full-width sections and checkbox associations; user scenarios remain unexecuted intent.

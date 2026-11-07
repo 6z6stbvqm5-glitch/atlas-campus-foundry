@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.data/
+.data-smoke/
+test-results/
+playwright-report/
+*.log
+artifacts/
+.backups/
+.finesse/
