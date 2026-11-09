@@ -55,6 +55,19 @@ npm run deploy-commerce
 
 首次浏览器安装：`npx playwright install chromium`。本机已经执行成功。测试详情和截图位于 `artifacts/`，故障证据位于 `artifacts/failures/`。
 
+## 模型接入（后端口径）
+
+平台只认一个 OpenAI-compatible 端点，由运维在后台配置，**不提供按用户自选 provider 的界面**。优先级：`platform_settings` 表（运行期写入）> `.env`。写入立即对运行中的进程生效，无需重启。
+
+| 接口 | 权限 | 作用 |
+|---|---|---|
+| `GET /api/system/llm` | 任意登录用户 | 回 `configured` / `model` / `baseUrl` / `apiKeyPresent` / `source`，永不回显 key |
+| `PUT /api/system/llm` | admin | 写入 `{baseUrl, model, apiKey}`；key 以 AES-256-GCM 加密存库 |
+| `POST /api/system/llm/test` | admin | 一次短补全探测，区分 401/404/429/不可达/超时 |
+| `DELETE /api/system/llm` | admin | 清除配置，回落到 `.env` |
+
+未配置时 `POST /api/jobs` 依然建任务，状态 `blocked` / `error=LLM_UNCONFIGURED`，这是设计行为。网络实测：`api.openai.com:443` 在本机不可达，`api.deepseek.com`、`dashscope.aliyuncs.com`、`api.moonshot.cn`、`open.bigmodel.cn`、`api.siliconflow.cn`、`ark.cn-beijing.volces.com` 可达。操作细节见[平台操作技能](.claude/skills/atlas-foundry/SKILL.md)。
+
 ## 工程结构
 
 ```text
@@ -79,6 +92,7 @@ docs/research/         72 个研究样本、原始证据及许可证筛查
 - [运维与部署](docs/OPERATIONS.md)
 - [模块开发与发布](docs/MODULE_DEVELOPMENT.md)
 - [Agent 配置](docs/AGENT_GUIDE.md)
+- [平台操作技能（给后续 AI Agent / 运维）](.claude/skills/atlas-foundry/SKILL.md)
 - [安全边界](SECURITY_REPORT.md)
 - [测试与失败记录](TEST_REPORT.md)
 - [下一步与恢复](NEXT_ACTIONS.md)

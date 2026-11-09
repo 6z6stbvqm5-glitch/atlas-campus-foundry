@@ -10,11 +10,19 @@ import { exportProject } from "./export.js";
 import { Deployments } from "./deployment.js";
 import { Agent, toolContracts } from "./agent.js";
 import {
+  AppError,
   moduleManifestSchema,
   productSpecSchema,
 } from "../packages/contracts/src/index.js";
 import { IsolatedExecutor, dockerAvailable } from "./executor.js";
 import { encryptSecret } from "./vault.js";
+import {
+  bootLlmConfig,
+  clearLlmConfig,
+  llmStatus,
+  probeLlm,
+  saveLlmConfig,
+} from "./llm-config.js";
 import { registerCommunity } from "../packages/modules/src/community.js";
 
 export async function createControl(
@@ -54,8 +62,14 @@ export async function createControl(
   errors(app);
   await setupAuth(app, db, "control", true);
   registerCommunity(app, db);
+  await bootLlmConfig(db, root);
   const id = (request: { params: unknown }) =>
     (request.params as { id: string }).id;
+  const requireAdmin = <T extends { role: string }>(user: T): T => {
+    if (user.role !== "admin")
+      throw new AppError(403, "ADMIN_REQUIRED", "需要平台管理员权限");
+    return user;
+  };
   app.get("/api/health", async () => {
     await db.query("SELECT 1");
     return {
@@ -78,10 +92,7 @@ export async function createControl(
   app.get("/api/system", async (request) => {
     requireUser(request);
     return {
-      llm: {
-        configured: Boolean(process.env.LLM_API_KEY && process.env.LLM_MODEL),
-        model: process.env.LLM_MODEL || null,
-      },
+      llm: llmStatus(),
       deployment: {
         provider: process.env.DEPLOYMENT_PROVIDER || "local-trusted",
         docker: await dockerAvailable(),
@@ -89,6 +100,44 @@ export async function createControl(
       },
       version: "0.1.0",
     };
+  });
+  /**
+   * Platform model endpoint configuration (operator only).
+   *
+   * Deliberately a backend-only surface for now: no provider catalogue, no
+   * per-user BYO-key. One endpoint, one key, applied to process.env in place so
+   * `Agent.startJob` and `OpenAICompatibleProvider.complete` pick it up on the
+   * next call without a restart. The key is encrypted at rest in
+   * `platform_settings` and is never returned by any route.
+   */
+  app.get("/api/system/llm", async (request) => {
+    requireUser(request);
+    return llmStatus();
+  });
+  app.put("/api/system/llm", async (request) => {
+    const user = requireAdmin(requireUser(request));
+    const status = await saveLlmConfig(db, root, request.body, user.id);
+    await projects.audit(user.id, "system.llm_configured", "llm", {
+      model: status.model,
+      baseUrl: status.baseUrl,
+    });
+    return status;
+  });
+  app.delete("/api/system/llm", async (request) => {
+    const user = requireAdmin(requireUser(request));
+    const status = await clearLlmConfig(db);
+    await projects.audit(user.id, "system.llm_cleared", "llm", {});
+    return status;
+  });
+  app.post("/api/system/llm/test", async (request) => {
+    const user = requireAdmin(requireUser(request));
+    const result = await probeLlm();
+    await projects.audit(user.id, "system.llm_probe", "llm", {
+      ok: result.ok,
+      code: result.code,
+      latencyMs: "latencyMs" in result ? result.latencyMs : null,
+    });
+    return result;
   });
   app.get("/api/projects", async (request) => {
     const user = requireUser(request);
