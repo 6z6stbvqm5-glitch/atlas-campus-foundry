@@ -4,7 +4,7 @@ Rechecked 2026-10-12. The requirements audit and frontend refinement do not remo
 
 ## External resources
 
-- LLM credentials/model: live requests, custom code generation and self-repair remain BLOCKED. Real adapter and tools are implemented.
+- LLM credentials/model: platform-side endpoint configuration is implemented and verified end to end — `PUT /api/system/llm` stores an OpenAI-compatible base URL/model/key (AES-256-GCM at rest), applies it to the running process without a restart, `POST /api/system/llm/test` diagnoses credentials, endpoint reachability and rate limits, and `DELETE /api/system/llm` falls back to `.env`. What remains BLOCKED is only the credential itself: no operator key has been supplied, so live requests, custom code generation and self-repair are still unverified. On the current network `api.openai.com:443` is unreachable while `api.deepseek.com`, `dashscope.aliyuncs.com`, `api.moonshot.cn`, `open.bigmodel.cn`, `api.siliconflow.cn` and `ark.cn-beijing.volces.com` answer, so a domestic OpenAI-compatible endpoint is the practical choice.
 - Docker Engine: no Docker/WSL runtime is installed. Isolated builds/tests and generated-code deployment remain BLOCKED; host execution is denied.
 - Independent domains/HTTPS/authorized host: no public environment was provided. No DNS change, cloud purchase or public deployment was performed.
 - SMTP delivery (optional): local outbox works; actual email transport/delivery is unverified. University SSO is not implemented.

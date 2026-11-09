@@ -32,6 +32,17 @@ export async function encryptSecret(root: string, value: string) {
     ciphertext.toString("base64"),
   ].join(".");
 }
+export async function decryptSecret(root: string, value: string) {
+  const key = await vaultKey(root);
+  const [iv, tag, body] = value
+    .split(".")
+    .map((part) => Buffer.from(part, "base64"));
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(body), decipher.final()]).toString(
+    "utf8",
+  );
+}
 export async function applicationSecrets(
   db: Database,
   root: string,
