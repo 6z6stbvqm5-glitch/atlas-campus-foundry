@@ -339,6 +339,7 @@ function Dashboard() {
           </span>
         </div>
       </section>
+      <AppRuntimePanel />
       <section>
         <div className="section-head">
           <h2>{trash ? t("回收站") : t("我的项目")}</h2>
@@ -1309,6 +1310,137 @@ function EnvironmentSettings({ id }: { id: string }) {
     </section>
   );
 }
+function AppRuntimePanel() {
+  const deployments = useLoad<{ items: Deployment[] }>("/api/deployments", 4000);
+  const action = useAction();
+  const [message, setMessage] = useState("");
+  const live = (deployments.data?.items ?? []).filter(
+    (d) => d.status !== "deleted",
+  );
+  const running = live.filter((d) => d.status === "running");
+  const idle = live.filter((d) => d.status !== "running");
+  async function act(id: string, verb: "start" | "stop" | "restart") {
+    await action.run(async () => {
+      await post(`/api/deployments/${id}/${verb}`);
+      await deployments.refresh();
+    });
+  }
+  async function bulk(verb: "start" | "stop", targets: Deployment[]) {
+    if (!targets.length) return;
+    await action.run(async () => {
+      let done = 0;
+      const failed: string[] = [];
+      for (const d of targets)
+        try {
+          await post(`/api/deployments/${d.id}/${verb}`);
+          done += 1;
+        } catch (error) {
+          failed.push(
+            `${d.project_name ?? d.id.slice(0, 8)}：${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      await deployments.refresh();
+      setMessage(
+        `${verb === "start" ? "已启动" : "已停止"} ${done} 个应用${
+          failed.length ? `；未成功：${failed.join("；")}` : ""
+        }`,
+      );
+    });
+  }
+  return (
+    <section>
+      <div className="section-head">
+        <h2>{t("应用运行控制")}</h2>
+        <span className="muted">
+          {t("运行中")} {running.length} / {live.length}
+        </span>
+      </div>
+      {deployments.error && <Notice>{deployments.error}</Notice>}
+      {action.error && <Notice>{action.error}</Notice>}
+      {message && <Notice kind="info">{message}</Notice>}
+      {deployments.loading ? (
+        <Loading />
+      ) : !live.length ? (
+        <Empty>{t("暂无部署。在项目中创建预览以启动应用。")}</Empty>
+      ) : (
+        <>
+          <div className="inline-actions">
+            <button
+              className="primary"
+              disabled={action.busy || !idle.length}
+              onClick={() => void bulk("start", idle)}
+            >
+              <Play size={15} />
+              {t("全部启动")}
+            </button>
+            <button
+              disabled={action.busy || !running.length}
+              onClick={() => void bulk("stop", running)}
+            >
+              <Square size={15} />
+              {t("全部停止")}
+            </button>
+          </div>
+          <div className="deployment-list">
+            {live.map((d) => (
+              <article className="deployment-row" key={d.id}>
+                <div className="deployment-info">
+                  <Rocket size={21} />
+                  <div>
+                    <h3>{d.project_name ?? t("未命名应用")}</h3>
+                    <small>
+                      {d.id.slice(0, 8)} · {d.provider} ·
+                      {d.status === "running" ? ` :${d.port}` : " —"}
+                    </small>
+                  </div>
+                  <Badge status={d.status} />
+                </div>
+                <div className="inline-actions">
+                  {d.status === "running" ? (
+                    <a
+                      className="button"
+                      href={`http://app-${d.app_id}.localhost:${d.port}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink size={15} />
+                      {t("打开应用")}
+                    </a>
+                  ) : null}
+                  <button
+                    className={d.status === "running" ? "" : "primary"}
+                    disabled={action.busy}
+                    title={d.status === "running" ? t("已运行") : t("启动应用")}
+                    onClick={() =>
+                      void act(d.id, d.status === "running" ? "restart" : "start")
+                    }
+                  >
+                    {d.status === "running" ? (
+                      <RefreshCw size={15} />
+                    ) : (
+                      <Play size={15} />
+                    )}
+                    {d.status === "running" ? t("重启") : t("启动")}
+                  </button>
+                  {d.status === "running" && (
+                    <button
+                      disabled={action.busy}
+                      title={t("停止应用")}
+                      onClick={() => void act(d.id, "stop")}
+                    >
+                      <Square size={15} />
+                      {t("停止")}
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
 function DeploymentView({
   projectId,
   compact = false,
@@ -1400,6 +1532,23 @@ function DeploymentView({
                 >
                   <Activity size={16} />
                 </button>
+                {d.status !== "running" && (
+                  <button
+                    className="primary"
+                    title={t("启动应用")}
+                    aria-label={`启动 ${d.id.slice(0, 8)}`}
+                    disabled={action.busy}
+                    onClick={() =>
+                      void action.run(async () => {
+                        await post(`/api/deployments/${d.id}/start`);
+                        await records.refresh();
+                      })
+                    }
+                  >
+                    <Play size={15} />
+                    {t("启动")}
+                  </button>
+                )}
                 <button
                   title={t("重新部署")}
                   aria-label={`重新部署 ${d.id.slice(0, 8)}`}

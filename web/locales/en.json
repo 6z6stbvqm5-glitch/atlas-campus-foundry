@@ -760,5 +760,14 @@
   "暂无用户角色": "No user roles yet",
   "暂无数据模型": "No data models yet",
   "暂无验收场景": "No acceptance scenarios yet",
-  "连线总览": "Connection overview"
+  "连线总览": "Connection overview",
+  "启动应用": "Start application",
+  "启动": "Start",
+  "停止": "Stop",
+  "重启": "Restart",
+  "已运行": "Already running",
+  "应用运行控制": "Application runtime control",
+  "全部启动": "Start all",
+  "全部停止": "Stop all",
+  "未命名应用": "Untitled application"
 }
