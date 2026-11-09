@@ -1,10 +1,10 @@
-# 技术部分进度表（发布版 v1.4）
+# 技术部分进度表（发布版 v1.5）
 
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | ATLAS-DEMO-TASK-001 |
-| 版本 | v1.4 |
-| 发布日期 | 2026-11-07（v1.4 更新 2026-11-09） |
+| 版本 | v1.5 |
+| 发布日期 | 2026-11-07（v1.5 更新 2026-11-09） |
 | 适用范围 | 答辩现场演示与使用（不含后期运营） |
 | 颗粒总数 | 15 项（T01–T15） |
 | 维护人 | P1 平台技术负责人 |
@@ -21,7 +21,7 @@
 | ✅ 完成 | 已通过验收 |
 | ⛔ 卡住 | 存在阻塞，需上报处理 |
 
-当前进度：**完成 4 / 15　进行中 1　未开始 10**
+当前进度：**完成 5 / 15　进行中 0　未开始 10**
 
 ## 二、角色与职责
 
@@ -43,7 +43,7 @@
 | T03 | 账号与访问固化 | R2 | T02 完成 | 读取 `.data/local-access.json`，生成账号卡 | 账号卡 3 份 | 讲稿／现场／备份各 1 份，现场可登录 | 0.5h | T02 | ☐ 未开始 |
 | T04 | 快照与恢复演练 | R2 | T02 完成 | 完整复制 `.data` 至 `_demo-backup/data-完成态-<日期>`；再执行一次反向覆盖演练 | 2 份快照 + 半页恢复步骤 | 独立完成一次恢复演练，P1 验收 | 1h | T02 | ☐ 未开始 |
 | T05 | 数据库集群兼容验证 | P1 | 现有 `.data/control` | 以现有 `.data` 启动服务，观察版本报错 | 结论：可用／需重建 | `/api/health` 返回 `status: ok` | 1h | — | ✅ 完成 |
-| T06 | 模型接入 | P1 | 支持 `tools` 的密钥 | `PUT /api/system/llm` 写入 `baseUrl`／`model`／`apiKey`（或 `.env` 三件套），先 `POST /api/system/llm/test` 探连通性，再执行 `npm run verify-integrations` | 可用模型通道 | 探测返回 200；401／404／429／不可达可区分；`verify-integrations` 退出码 0 | 1.5h | — | 🔄 进行中 |
+| T06 | 模型接入 | P1 | 支持 `tools` 的密钥 | `PUT /api/system/llm` 写入 `baseUrl`／`model`／`apiKey`（或 `.env` 三件套），先 `POST /api/system/llm/test` 探连通性，再执行 `npm run verify-integrations` | 可用模型通道 | 探测返回 `ok`；401／404／429／不可达可区分；`verify-integrations` 的 LLM 环节 TESTED（Docker／原生 PG／SMTP 为既定 BLOCKED，退出码 2 不算失败）；真实 Agent 任务 succeeded 且预览应用可读写 | 1.5h | — | ✅ 完成 |
 | T07 | 演示输入定稿 | P1 | T06 通过 | 编写 5 版需求描述并各执行 1 次 | 1 条固定输入 | 可脱离文档完整复述 | 1h | T06 | ☐ 未开始 |
 | T08 | 稳定性跑测 | R2 | T07 的输入 | 连续执行 5 次 `npm run verify-live-agent` 并记录结果 | 成功率表 | ≥ 4/5 | 2h | T07 | ☐ 未开始 |
 | T09 | 演示路径界面走查 | R3 | T02 完成 | 按 8 条清单走查 6 个页面 | 缺陷表 1 页 | 每页给出「可讲／需绕行」结论 | 6h | T02 | ☐ 未开始 |
@@ -107,3 +107,4 @@
 | v1.2 | 2026-11-09 | T02 三套示例部署完成（5 个应用全部 running，四份 json 齐全，示例记录 2／2／3）；T12 转入进行中（reuse-report --showcase 退出码 0）。 |
 | v1.3 | 2026-11-09 | 平台级模型接入接口建成并实测：`GET/PUT/DELETE /api/system/llm` ＋ `POST /api/system/llm/test`，密文存 `platform_settings`、写入即时生效免重启、探测可区分 401／404／429／不可达、非 admin 返回 403、清除后回落 `.env`；T06 转入进行中（缺真实密钥）。`npm test` 28/28 通过。配套 `.claude/skills/atlas-foundry/SKILL.md` 作为后续 AI Agent 的操作基线。 |
 | v1.4 | 2026-11-09 | `npm test` 28/28 通过（100.9s）、`npx playwright test` 12/12 通过（2.9min，首次需 `npx playwright install chromium`）；T12 证据归档标记完成，进度推进到 4/15 完成。 |
+| v1.5 | 2026-11-09 | T06 模型接入完成：真实密钥接入 `deepseek-chat`（`https://api.deepseek.com/v1`），`POST /api/system/llm/test` 返回 `ok:true`；`verify-integrations` 的 LLM 环节 TESTED；真实 Agent job `29f772e5` succeeded（16 步、12 模块、8 条验收场景），预览端口 63313 健康检查通过，预览应用实测登录→建活动→建社团→按 kind 列表→关键词搜索全部返回正确中文数据。排障中修复 5 处 Agent 缺陷（工具顺序约束、自动依赖画布方向、规格清洗、目录读取、环境阻塞不计失败）。详见 `_work/T06-模型接入验证-2026-11-09.md`。 |
