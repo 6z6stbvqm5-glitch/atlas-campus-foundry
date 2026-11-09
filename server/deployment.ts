@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { sharedSourceFingerprint } from "./source-fingerprint.js";
 import { createServer } from "node:net";
 import { mkdir, writeFile, appendFile, readFile, cp } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Projects, type Application } from "./projects.js";
@@ -498,6 +499,155 @@ export class Deployments {
     );
     await this.projects.audit(actor, "deployment.stopped", id);
     return { ok: true };
+  }
+  /**
+   * Bring an existing deployment back up on its own port without creating a new
+   * record. Restart always mints a fresh deployment (new port, new artifact);
+   * operators need a plain on/off switch that keeps the application address
+   * stable, so start reuses the row, the artifact and the persisted port.
+   */
+  /**
+   * A deployment row can still read `running` after the control server itself
+   * restarted (the runtime child outlives its parent, or dies with the machine).
+   * Probing the real port keeps "start" honest: it only short-circuits when the
+   * application actually answers on its own address.
+   */
+  private async probe(appId: string, port: number) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      if (!response.ok) return false;
+      const body = (await response.json()) as { appId?: string };
+      return body.appId === appId;
+    } catch {
+      return false;
+    }
+  }
+  async start(id: string, actor: string) {
+    const row = await this.get(id, actor);
+    if (row.status === "running" && (await this.probe(row.app_id, row.port)))
+      return row;
+    if (row.status === "deleted")
+      throw new AppError(409, "DEPLOYMENT_DELETED", "该部署已移除");
+    if (!row.artifact)
+      throw new AppError(
+        409,
+        "ARTIFACT_MISSING",
+        "该部署没有可用构件，请重新部署",
+      );
+    const artifactFile = path.join(row.artifact, "artifact.json");
+    if (!existsSync(artifactFile))
+      throw new AppError(
+        409,
+        "ARTIFACT_MISSING",
+        "构件目录已不存在，请重新部署",
+      );
+    const artifact = JSON.parse(
+      await readFile(artifactFile, "utf8"),
+    ) as Artifact;
+    const configFile = path.join(row.artifact, "runtime.json");
+    await writeFile(
+      configFile,
+      JSON.stringify({
+        ...artifact,
+        dataDir:
+          row.provider === "docker"
+            ? "/app-data"
+            : path.resolve(this.projects.root, "apps", row.app_id),
+      }),
+    );
+    await this.projects.db.query(
+      "UPDATE deployments SET status='starting',updated_at=now() WHERE id=$1",
+      [id],
+    );
+    if (row.provider === "docker") {
+      const started = await command("docker", ["start", `foundry-${id}`], {
+        timeout: 30000,
+      });
+      if (!started.ok) {
+        await this.projects.db.query(
+          "UPDATE deployments SET status='failed',updated_at=now() WHERE id=$1",
+          [id],
+        );
+        await this.log(id, `docker start 失败：${started.stderr}\n`);
+        return this.get(id, actor);
+      }
+    } else {
+      const env: NodeJS.ProcessEnv = {
+        PATH: process.env.PATH,
+        SystemRoot: process.env.SystemRoot,
+        TEMP: process.env.TEMP,
+        TMP: process.env.TMP,
+        NODE_ENV: "production",
+        RUNTIME_CONFIG: configFile,
+        RUNTIME_PORT: String(row.port),
+        RUNTIME_HOST: "127.0.0.1",
+        DOTENV_CONFIG_PATH: path.join(row.artifact, "no-env-file"),
+      };
+      const child = spawn(
+        process.execPath,
+        ["--import", "tsx", "server/runtime-main.ts"],
+        {
+          cwd: process.cwd(),
+          env,
+          windowsHide: true,
+          shell: false,
+          stdio: ["ignore", "pipe", "pipe", "ipc"],
+        },
+      );
+      this.processes.set(id, child);
+      const logFile = path.join(row.artifact, "runtime.log");
+      const capture = (chunk: Buffer) => {
+        void appendFile(logFile, chunk).catch(() => {});
+      };
+      child.stdout!.on("data", capture);
+      child.stderr!.on("data", capture);
+      child.once("exit", () => {
+        this.processes.delete(id);
+        void this.projects.db
+          .query(
+            "UPDATE deployments SET status='stopped',updated_at=now() WHERE id=$1 AND status='running'",
+            [id],
+          )
+          .catch(() => {});
+      });
+      await this.projects.db.query(
+        "UPDATE deployments SET pid=$2 WHERE id=$1",
+        [id, child.pid ?? null],
+      );
+    }
+    let healthy = false;
+    for (let attempt = 0; attempt < 45; attempt++) {
+      if (await this.probe(row.app_id, row.port)) {
+        healthy = true;
+        break;
+      }
+      await delay(300);
+    }
+    if (!healthy) {
+      await this.terminate(id, row.provider);
+      await this.projects.db.query(
+        "UPDATE deployments SET status='failed',updated_at=now() WHERE id=$1",
+        [id],
+      );
+      await this.log(id, "启动失败：健康检查未通过\n");
+      return this.get(id, actor);
+    }
+    await this.projects.db.query(
+      "UPDATE deployments SET status='running',updated_at=now() WHERE id=$1",
+      [id],
+    );
+    await this.log(
+      id,
+      `Started on port ${row.port} (in-place). HTTP health check passed.\n`,
+    );
+    await this.projects.audit(actor, "deployment.started", id, {
+      appId: row.app_id,
+      provider: row.provider,
+      port: row.port,
+    });
+    return this.get(id, actor);
   }
   async restart(id: string, actor: string) {
     const row = await this.get(id, actor);

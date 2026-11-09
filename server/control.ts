@@ -415,6 +415,9 @@ export async function createControl(
   app.post("/api/deployments/:id/stop", async (request) =>
     deployments.stop(id(request), requireUser(request).id),
   );
+  app.post("/api/deployments/:id/start", async (request) =>
+    deployments.start(id(request), requireUser(request).id),
+  );
   app.post("/api/deployments/:id/restart", async (request) =>
     deployments.restart(id(request), requireUser(request).id),
   );
