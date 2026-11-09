@@ -1,10 +1,10 @@
-# 技术部分进度表（发布版 v1.1）
+# 技术部分进度表（发布版 v1.2）
 
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | ATLAS-DEMO-TASK-001 |
-| 版本 | v1.1 |
-| 发布日期 | 2026-11-07（v1.1 更新 2026-11-09） |
+| 版本 | v1.2 |
+| 发布日期 | 2026-11-07（v1.2 更新 2026-11-09） |
 | 适用范围 | 答辩现场演示与使用（不含后期运营） |
 | 颗粒总数 | 15 项（T01–T15） |
 | 维护人 | P1 平台技术负责人 |
@@ -21,7 +21,7 @@
 | ✅ 完成 | 已通过验收 |
 | ⛔ 卡住 | 存在阻塞，需上报处理 |
 
-当前进度：**完成 2 / 15　进行中 1　未开始 12**
+当前进度：**完成 3 / 15　进行中 1　未开始 11**
 
 ## 二、角色与职责
 
@@ -39,7 +39,7 @@
 | 编号 | 颗粒 | 角色 | 输入 | 动作／命令 | 输出 | 验收标准 | 工时 | 前置 | 状态 |
 |---|---|---|---|---|---|---|---|---|---|
 | T01 | 环境体检 | R1 | 演示机 | `node -v`；`npm run build` | 可构建的机器 | 构建结束输出 `built in ...`，无报错 | 2h | — | ✅ 完成 |
-| T02 | 三套示例部署 | R2 | T01 通过 | `npm run deploy-local`／`deploy-visual`／`deploy-commerce` | 5 个示例应用 | `.data` 下 4 份 json 齐全；`app-*.localhost` 可登录并提交 1 条记录 | 3h | T01 | 🔄 进行中 |
+| T02 | 三套示例部署 | R2 | T01 通过 | `npm run deploy-local`／`deploy-visual`／`deploy-commerce` | 5 个示例应用 | `.data` 下 4 份 json 齐全；`app-*.localhost` 可登录并提交 1 条记录 | 3h | T01 | ✅ 完成 |
 | T03 | 账号与访问固化 | R2 | T02 完成 | 读取 `.data/local-access.json`，生成账号卡 | 账号卡 3 份 | 讲稿／现场／备份各 1 份，现场可登录 | 0.5h | T02 | ☐ 未开始 |
 | T04 | 快照与恢复演练 | R2 | T02 完成 | 完整复制 `.data` 至 `_demo-backup/data-完成态-<日期>`；再执行一次反向覆盖演练 | 2 份快照 + 半页恢复步骤 | 独立完成一次恢复演练，P1 验收 | 1h | T02 | ☐ 未开始 |
 | T05 | 数据库集群兼容验证 | P1 | 现有 `.data/control` | 以现有 `.data` 启动服务，观察版本报错 | 结论：可用／需重建 | `/api/health` 返回 `status: ok` | 1h | — | ✅ 完成 |
@@ -49,7 +49,7 @@
 | T09 | 演示路径界面走查 | R3 | T02 完成 | 按 8 条清单走查 6 个页面 | 缺陷表 1 页 | 每页给出「可讲／需绕行」结论 | 6h | T02 | ☐ 未开始 |
 | T10 | 中英切换与移动端 | R3 | T09 同批 | 切换中／英检查漏翻；移动端视口截图 1 张 | 截图 + 漏翻清单 | 演示路径无漏翻 | 1.5h | T09 | ☐ 未开始 |
 | T11 | 合并窗口构建 | P1 | R3 交付的改动 | 每日定时执行 `npm run build` 与部署验证 | 可演示版本 | 构建通过且部署后可访问 | 0.5h/天 | T09 | ☐ 未开始 |
-| T12 | 证据归档 | R4 | T02 完成 | 执行 `npm test`、`npx playwright test`、`npm run reuse-report -- --showcase` | `artifacts/` 下 3 份产物 | `reuse-report` 退出码 0 | 1.5h | T02 | ☐ 未开始 |
+| T12 | 证据归档 | R4 | T02 完成 | 执行 `npm test`、`npx playwright test`、`npm run reuse-report -- --showcase` | `artifacts/` 下 3 份产物 | `reuse-report` 退出码 0 | 1.5h | T02 | 🔄 进行中 |
 | T13 | 录屏与截图 | R4 | T02 + T09 | 录制 5 分钟无解说全流程视频，导出关键帧截图 | 1 个视频 + 1 组图 | 未参与人员可独立看懂 | 4h | T09 | ☐ 未开始 |
 | T14 | 冷启动演练与执行单 | R5 | T02 + T04 | 从关机断网状态开始，按执行单启动服务 | 现场执行单 | 3 分钟内进入第一幕 | 2h | T04 | ☐ 未开始 |
 | T15 | 网络与离线演练 | R1 | 手机热点 | 断网运行平台（AI 环节除外）；热点环境执行一次 AI 环节 | 网络方案确认 | 两种网络下均有完整路径 | 1.5h | T06 | ☐ 未开始 |
@@ -57,7 +57,8 @@
 ### 状态说明
 
 - **T01 环境体检（✅ 完成）**：2026-11-07 13:48 构建通过，`dist/index.html` 已重建。
-- **T02 三套示例部署（🔄 进行中）**：本机 `.data` 尚未检出 `local-access.json`、`showcase.json`、`visual-showcase.json`、`commercial-showcase.json` 四份产物，需复核部署是否在目标数据目录内完成。
+- **T02 三套示例部署（✅ 完成）**：2026-11-09 18:04 实测。`deploy-local` 部署 Campus Events、Campus Marketplace、Study Buddy；`deploy-visual` 部署视觉编排示例；`deploy-commerce` 部署商业社区示例（18 个模块，线下结算）。5 个应用全部 `running`，`developer@campus.local` 可登录，示例记录分别 2／2／3 条，`.data` 下 `local-access.json`、`showcase.json`、`visual-showcase.json`、`commercial-showcase.json` 四份产物齐全。首次执行曾在自建模块审核处报「需要平台管理员审核」，原因为控制库内已有历史管理员账号、新账号只有 developer 角色；停机把该账号提为 admin 后重跑即通过。
+- **T12 证据归档（🔄 进行中）**：`npm run reuse-report -- --showcase` 已跑通，退出码 0，产物 `artifacts/showcase-reuse-report.json`：5 个应用、54 次模块安装、35 个去重模块、`sharedCodeImplementations=1`、`applicationSpecificExecutableLines=0`。`npm test` 与 `npx playwright test` 尚未执行。
 - **T05 数据库集群兼容验证（✅ 完成）**：2026-11-09 实测。本机 PGlite 0.5.8 内置 PostgreSQL 18.3，与 `.data/control` 内的 `PG_VERSION=18` 同大版本；用该集群直接启动服务，无迁移报错，`/api/health` 返回 `status: ok`；注册／登录／`/api/auth/me`／`/api/system` 全部连通。集群内 20 张业务表完好（`module_versions=94`、`schema_migrations=3`）。**顺带确认：库内 `projects=0`，三套示例此前确实未在此数据目录部署过。**
 
 ## 四、串行门（Gate）
@@ -103,3 +104,4 @@
 |---|---|---|
 | v1.0 | 2026-11-07 | 初版发布。15 项技术颗粒、3 道串行门、6 个角色、5 条边界规则。T01 完成，T02 进行中待复核。 |
 | v1.1 | 2026-11-09 | T05 数据库集群兼容验证完成（PGlite 0.5.8 / PG 18.3 直开原集群，`/api/health` ok，鉴权链路通）。文件更名为《技术部分进度表》。 |
+| v1.2 | 2026-11-09 | T02 三套示例部署完成（5 个应用全部 running，四份 json 齐全，示例记录 2／2／3）；T12 转入进行中（reuse-report --showcase 退出码 0）。 |
