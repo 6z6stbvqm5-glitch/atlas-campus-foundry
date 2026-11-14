@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="790" viewBox="0 0 1600 790">
+  <rect width="1600" height="790" fill="#F2E4C8"/>
+  <g opacity="0.3" stroke="#DCCBAA" stroke-width="1"><line x1="130" y1="0" x2="130" y2="790"/><line x1="260" y1="0" x2="260" y2="790"/><line x1="390" y1="0" x2="390" y2="790"/><line x1="520" y1="0" x2="520" y2="790"/><line x1="650" y1="0" x2="650" y2="790"/><line x1="780" y1="0" x2="780" y2="790"/><line x1="910" y1="0" x2="910" y2="790"/><line x1="1040" y1="0" x2="1040" y2="790"/><line x1="1170" y1="0" x2="1170" y2="790"/><line x1="1300" y1="0" x2="1300" y2="790"/><line x1="1430" y1="0" x2="1430" y2="790"/><line x1="1560" y1="0" x2="1560" y2="790"/></g>
+  <text x="60" y="80" font-family="Georgia, 'Times New Roman', serif" font-size="50" font-weight="bold" fill="#2B2418">Comparative Evaluation: Build Success and Cost</text>
+  <line x1="60" y1="118" x2="1540" y2="118" stroke="#8A7A57" stroke-width="2"/>
+  <text x="60" y="168" font-family="Georgia, 'Times New Roman', serif" font-size="29" font-weight="bold" fill="#2B2418">Method</text>
+  <text x="470" y="168" font-family="Georgia, 'Times New Roman', serif" font-size="29" font-weight="bold" fill="#2B2418">Successful Builds</text>
+  <text x="1074" y="168" font-family="Georgia, 'Times New Roman', serif" font-size="29" font-weight="bold" fill="#2B2418">Cost per Success</text>
+  <line x1="60" y1="188" x2="1540" y2="188" stroke="#8A7A57" stroke-width="1.5"/>
+  
+    <text x="72" y="244" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2B2418">General AI</text>
+    <text x="470" y="208" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="bold" fill="#2B2418">7 / 18</text>
+    <rect x="470" y="230" width="26" height="20" fill="#D9B878"/><rect x="500" y="230" width="26" height="20" fill="#D9B878"/><rect x="530" y="230" width="26" height="20" fill="#D9B878"/><rect x="560" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="590" y="230" width="26" height="20" fill="#D9B878"/><rect x="620" y="230" width="26" height="20" fill="#D9B878"/><rect x="650" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="680" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="710" y="230" width="26" height="20" fill="#D9B878"/><rect x="740" y="230" width="26" height="20" fill="#D9B878"/><rect x="770" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="800" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="830" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="860" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="890" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="920" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="950" y="230" width="26" height="20" fill="#E7D7B4"/><rect x="980" y="230" width="26" height="20" fill="#E7D7B4"/>
+    <text x="1078" y="240" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#6B5B3E">$0.036</text>
+    <text x="1078" y="272" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#6B5B3E">3.54× baseline</text>
+    <text x="72" y="334" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#2B2418">AI + Capability Modules</text>
+    <text x="470" y="298" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="bold" fill="#2B2418">10 / 18</text>
+    <rect x="470" y="320" width="26" height="20" fill="#D9B878"/><rect x="500" y="320" width="26" height="20" fill="#D9B878"/><rect x="530" y="320" width="26" height="20" fill="#D9B878"/><rect x="560" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="590" y="320" width="26" height="20" fill="#D9B878"/><rect x="620" y="320" width="26" height="20" fill="#D9B878"/><rect x="650" y="320" width="26" height="20" fill="#D9B878"/><rect x="680" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="710" y="320" width="26" height="20" fill="#D9B878"/><rect x="740" y="320" width="26" height="20" fill="#D9B878"/><rect x="770" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="800" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="830" y="320" width="26" height="20" fill="#D9B878"/><rect x="860" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="890" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="920" y="320" width="26" height="20" fill="#D9B878"/><rect x="950" y="320" width="26" height="20" fill="#E7D7B4"/><rect x="980" y="320" width="26" height="20" fill="#E7D7B4"/>
+    <text x="1078" y="330" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#6B5B3E">$0.022</text>
+    <text x="1078" y="362" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#6B5B3E">2.20× baseline</text><rect x="40" y="372" width="1000" height="120" fill="#0C1A33"/>
+    <text x="72" y="434" font-family="Georgia, 'Times New Roman', serif" font-size="34" fill="#F7EFDD">ATLAS</text>
+    <text x="470" y="398" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="bold" fill="#F7EFDD">15 / 18</text>
+    <rect x="470" y="420" width="26" height="20" fill="#D9B878"/><rect x="500" y="420" width="26" height="20" fill="#D9B878"/><rect x="530" y="420" width="26" height="20" fill="#D9B878"/><rect x="560" y="420" width="26" height="20" fill="#D9B878"/><rect x="590" y="420" width="26" height="20" fill="#D9B878"/><rect x="620" y="420" width="26" height="20" fill="#D9B878"/><rect x="650" y="420" width="26" height="20" fill="#D9B878"/><rect x="680" y="420" width="26" height="20" fill="#D9B878"/><rect x="710" y="420" width="26" height="20" fill="#D9B878"/><rect x="740" y="420" width="26" height="20" fill="#D9B878"/><rect x="770" y="420" width="26" height="20" fill="#D9B878"/><rect x="800" y="420" width="26" height="20" fill="#2A3B57"/><rect x="830" y="420" width="26" height="20" fill="#D9B878"/><rect x="860" y="420" width="26" height="20" fill="#D9B878"/><rect x="890" y="420" width="26" height="20" fill="#2A3B57"/><rect x="920" y="420" width="26" height="20" fill="#D9B878"/><rect x="950" y="420" width="26" height="20" fill="#D9B878"/><rect x="980" y="420" width="26" height="20" fill="#2A3B57"/>
+    <text x="1078" y="430" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#D9B878">$0.010</text>
+    <text x="1078" y="462" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#D9B878">1.00× baseline</text>
+  <rect x="470" y="514" width="26" height="18" fill="#D9B878"/>
+  <text x="506" y="530" font-family="Georgia, 'Times New Roman', serif" font-size="22" fill="#6B5B3E">Successful build</text>
+  <rect x="716" y="514" width="26" height="18" fill="#E7D7B4"/>
+  <text x="752" y="530" font-family="Georgia, 'Times New Roman', serif" font-size="22" fill="#6B5B3E">Failed attempt</text>
+  <line x1="60" y1="622" x2="150" y2="622" stroke="#8A7A57" stroke-width="1"/>
+  <text x="60" y="654" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#6B5B3E">Same requirement set · same model (deepseek-chat) · 18 attempts per method</text>
+  <text x="60" y="680" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#6B5B3E">est. by Monte Carlo over 5 escalating difficulty levels · 5000 trials per cell · cost = USD per successful build</text>
+  <g opacity="0.9">
+    <path d="M 1330 750 A 270 270 0 0 1 1595 480" fill="none" stroke="#8A7A57" stroke-width="2"/>
+    <path d="M 1352 750 A 248 248 0 0 1 1595 502" fill="none" stroke="#8A7A57" stroke-width="1.5"/>
+    <path d="M 1374 750 A 226 226 0 0 1 1595 524" fill="none" stroke="#8A7A57" stroke-width="1"/>
+  </g>
+  <text x="1112" y="558" font-family="Georgia, 'Times New Roman', serif" font-size="126" font-weight="bold" fill="#6B5B3E">2.1×</text>
+  <text x="1150" y="614" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#6B5B3E">successful builds</text>
+  <text x="1150" y="648" font-family="Georgia, 'Times New Roman', serif" font-size="23" fill="#6B5B3E">VS. GENERAL AI</text>
+</svg>

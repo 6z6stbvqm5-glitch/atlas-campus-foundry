@@ -1,0 +1,33 @@
+{
+  "model": "deepseek-chat",
+  "base": "https://api.deepseek.com/v1",
+  "systemChars": 5823,
+  "specs": {
+    "L1": {
+      "prompt_tokens": 1848,
+      "completion_tokens": 65,
+      "total_tokens": 1913,
+      "replyHead": "我先检查当前项目状态，并查找 course-notes 模块。\n\n<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name=\"inspectProject\">\n\n</｜｜DSML｜｜ invoke>\n<｜｜DSML｜｜ ",
+      "specChars": 74
+    },
+    "L3": {
+      "prompt_tokens": 1857,
+      "completion_tokens": 36,
+      "total_tokens": 1893,
+      "replyHead": "I'll start by inspecting the current project state and the modules you named.\n\n<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name=\"i",
+      "specChars": 101
+    },
+    "L5": {
+      "prompt_tokens": 1858,
+      "completion_tokens": 36,
+      "total_tokens": 1894,
+      "replyHead": "I'll start by inspecting the current project state and the modules you named.\n\n<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name=\"i",
+      "specChars": 127
+    }
+  },
+  "observedPromptTokens": {
+    "L1": 1848,
+    "L3": 1857,
+    "L5": 1858
+  }
+}

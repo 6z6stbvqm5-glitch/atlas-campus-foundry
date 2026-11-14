@@ -1,0 +1,701 @@
+{
+  "generatedAt": "2026-11-14T15:14:40.967Z",
+  "assumptions": {
+    "price_usd_per_million": {
+      "input": 0.28,
+      "output": 0.42,
+      "outputShare": 0.15
+    },
+    "usd_per_token": 3.01e-7,
+    "trialsPerCell": 5000,
+    "stepBudget": 18,
+    "overBudgetPenalty": 0.22,
+    "attemptsPerLevel": [
+      4,
+      4,
+      4,
+      3,
+      3
+    ],
+    "workFormula": "W = 0.5*modules + 0.3*edges + 0.12*configFields + 1.1*files (+2 customCode)",
+    "note": "成功率与 token 为显式假设 + Monte Carlo，非真实 LLM 调用结果"
+  },
+  "work": [
+    {
+      "level": 1,
+      "name": "L1 单记录应用",
+      "desc": "课程笔记：1 块记录模块 + 列表",
+      "modules": [
+        "course-notes"
+      ],
+      "edges": 0,
+      "customCode": false,
+      "n": 2,
+      "fields": 0,
+      "files": 2,
+      "W": 3.2,
+      "moduleIds": [
+        "identity",
+        "course-notes"
+      ]
+    },
+    {
+      "level": 2,
+      "name": "L2 双块联动",
+      "desc": "作业清单 + 状态看板",
+      "modules": [
+        "assignments",
+        "board-view"
+      ],
+      "edges": 1,
+      "customCode": false,
+      "n": 3,
+      "fields": 0,
+      "files": 2,
+      "W": 4,
+      "moduleIds": [
+        "identity",
+        "assignments",
+        "board-view"
+      ]
+    },
+    {
+      "level": 3,
+      "name": "L3 三块 + 视图/检索",
+      "desc": "论坛 + 卡片视图 + 关键词搜索",
+      "modules": [
+        "discussion-forum",
+        "card-view",
+        "keyword-search"
+      ],
+      "edges": 3,
+      "customCode": false,
+      "n": 5,
+      "fields": 0,
+      "files": 2,
+      "W": 5.6,
+      "moduleIds": [
+        "card-view",
+        "identity",
+        "creator-profiles",
+        "discussion-forum",
+        "keyword-search"
+      ]
+    },
+    {
+      "level": 4,
+      "name": "L4 编排自动化",
+      "desc": "作业 + 触发/条件/通知 + 看板（6 条连线）",
+      "modules": [
+        "assignments",
+        "when-updated",
+        "status-condition",
+        "notify-author",
+        "board-view"
+      ],
+      "edges": 6,
+      "customCode": false,
+      "n": 7,
+      "fields": 1,
+      "files": 3,
+      "W": 8.72,
+      "moduleIds": [
+        "identity",
+        "assignments",
+        "board-view",
+        "notifications",
+        "notify-author",
+        "status-condition",
+        "when-updated"
+      ]
+    },
+    {
+      "level": 5,
+      "name": "L5 自定义代码",
+      "desc": "失物招领 + 内嵌区 + 留痕 + src/feature.ts",
+      "modules": [
+        "lost-found",
+        "embedded-list",
+        "audit-entry",
+        "notify-author"
+      ],
+      "edges": 4,
+      "customCode": true,
+      "n": 6,
+      "fields": 1,
+      "files": 4,
+      "W": 10.72,
+      "moduleIds": [
+        "audit-entry",
+        "embedded-list",
+        "identity",
+        "lost-found",
+        "notifications",
+        "notify-author"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "key": "general",
+      "method": "General AI",
+      "params": {
+        "alpha": 1.35,
+        "beta": 0.55
+      },
+      "perLevel": [
+        {
+          "level": 1,
+          "W": 3.2,
+          "n": 2,
+          "edges": 0,
+          "files": 2,
+          "needSteps": 14.6,
+          "actualSteps": 15,
+          "p_measured": 0.701,
+          "tokens_per_run": 50100,
+          "usd_per_run": 0.01508,
+          "tokens_per_success": 63324,
+          "usd_per_success": 0.01906,
+          "cost_index": 1.87
+        },
+        {
+          "level": 2,
+          "W": 4,
+          "n": 3,
+          "edges": 1,
+          "files": 2,
+          "needSteps": 15.8,
+          "actualSteps": 16,
+          "p_measured": 0.554,
+          "tokens_per_run": 55280,
+          "usd_per_run": 0.01664,
+          "tokens_per_success": 82850,
+          "usd_per_success": 0.02494,
+          "cost_index": 2.45
+        },
+        {
+          "level": 3,
+          "W": 5.6,
+          "n": 5,
+          "edges": 3,
+          "files": 2,
+          "needSteps": 18.2,
+          "actualSteps": 18,
+          "p_measured": 0.412,
+          "tokens_per_run": 66330,
+          "usd_per_run": 0.01997,
+          "tokens_per_success": 125022,
+          "usd_per_success": 0.03763,
+          "cost_index": 3.7
+        },
+        {
+          "level": 4,
+          "W": 8.72,
+          "n": 7,
+          "edges": 6,
+          "files": 3,
+          "needSteps": 22.2,
+          "actualSteps": 18,
+          "p_measured": 0.15,
+          "tokens_per_run": 66330,
+          "usd_per_run": 0.01997,
+          "tokens_per_success": 299369,
+          "usd_per_success": 0.09011,
+          "cost_index": 8.85
+        },
+        {
+          "level": 5,
+          "W": 10.72,
+          "n": 6,
+          "edges": 4,
+          "files": 4,
+          "needSteps": 22.6,
+          "actualSteps": 18,
+          "p_measured": 0.057,
+          "tokens_per_run": 74650,
+          "usd_per_run": 0.02247,
+          "tokens_per_success": 834691,
+          "usd_per_success": 0.25124,
+          "cost_index": 24.68
+        }
+      ],
+      "summary": {
+        "attempts": 18,
+        "successes": 7,
+        "successRate": 0.389,
+        "total_tokens": 837604,
+        "total_usd": 0.2521,
+        "tokens_per_success": 119658,
+        "usd_per_success": 0.03602,
+        "cost_index": 3.54
+      },
+      "runs": [
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 50100
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 50100
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 50100
+        },
+        {
+          "level": 1,
+          "ok": false,
+          "tokens": 31062
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 55280
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 55280
+        },
+        {
+          "level": 2,
+          "ok": false,
+          "tokens": 34274
+        },
+        {
+          "level": 2,
+          "ok": false,
+          "tokens": 34274
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 66330
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 66330
+        },
+        {
+          "level": 3,
+          "ok": false,
+          "tokens": 41125
+        },
+        {
+          "level": 3,
+          "ok": false,
+          "tokens": 41125
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 41125
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 41125
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 41125
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 46283
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 46283
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 46283
+        }
+      ]
+    },
+    {
+      "key": "modules",
+      "method": "AI + Capability Modules",
+      "params": {
+        "alpha": 2,
+        "beta": 0.52
+      },
+      "perLevel": [
+        {
+          "level": 1,
+          "W": 3.2,
+          "n": 2,
+          "edges": 0,
+          "files": 2,
+          "needSteps": 11.8,
+          "actualSteps": 12,
+          "p_measured": 0.823,
+          "tokens_per_run": 36180,
+          "usd_per_run": 0.01089,
+          "tokens_per_success": 40681,
+          "usd_per_success": 0.01224,
+          "cost_index": 1.2
+        },
+        {
+          "level": 2,
+          "W": 4,
+          "n": 3,
+          "edges": 1,
+          "files": 2,
+          "needSteps": 13.1,
+          "actualSteps": 13,
+          "p_measured": 0.716,
+          "tokens_per_run": 40430,
+          "usd_per_run": 0.01217,
+          "tokens_per_success": 49722,
+          "usd_per_success": 0.01497,
+          "cost_index": 1.47
+        },
+        {
+          "level": 3,
+          "W": 5.6,
+          "n": 5,
+          "edges": 3,
+          "files": 2,
+          "needSteps": 15.7,
+          "actualSteps": 16,
+          "p_measured": 0.609,
+          "tokens_per_run": 54320,
+          "usd_per_run": 0.01635,
+          "tokens_per_success": 74565,
+          "usd_per_success": 0.02244,
+          "cost_index": 2.2
+        },
+        {
+          "level": 4,
+          "W": 8.72,
+          "n": 7,
+          "edges": 6,
+          "files": 3,
+          "needSteps": 19.4,
+          "actualSteps": 18,
+          "p_measured": 0.402,
+          "tokens_per_run": 64530,
+          "usd_per_run": 0.01942,
+          "tokens_per_success": 120252,
+          "usd_per_success": 0.0362,
+          "cost_index": 3.56
+        },
+        {
+          "level": 5,
+          "W": 10.72,
+          "n": 6,
+          "edges": 4,
+          "files": 4,
+          "needSteps": 19.2,
+          "actualSteps": 18,
+          "p_measured": 0.226,
+          "tokens_per_run": 72850,
+          "usd_per_run": 0.02193,
+          "tokens_per_success": 217889,
+          "usd_per_success": 0.06558,
+          "cost_index": 6.44
+        }
+      ],
+      "summary": {
+        "attempts": 18,
+        "successes": 10,
+        "successRate": 0.556,
+        "total_tokens": 742655,
+        "total_usd": 0.2235,
+        "tokens_per_success": 74266,
+        "usd_per_success": 0.02235,
+        "cost_index": 2.2
+      },
+      "runs": [
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 36180
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 36180
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 36180
+        },
+        {
+          "level": 1,
+          "ok": false,
+          "tokens": 20984
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 40430
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 40430
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 40430
+        },
+        {
+          "level": 2,
+          "ok": false,
+          "tokens": 23449
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 54320
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 54320
+        },
+        {
+          "level": 3,
+          "ok": false,
+          "tokens": 31506
+        },
+        {
+          "level": 3,
+          "ok": false,
+          "tokens": 31506
+        },
+        {
+          "level": 4,
+          "ok": true,
+          "tokens": 64530
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 37427
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 37427
+        },
+        {
+          "level": 5,
+          "ok": true,
+          "tokens": 72850
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 42253
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 42253
+        }
+      ]
+    },
+    {
+      "key": "atlas",
+      "method": "ATLAS",
+      "params": {
+        "alpha": 3.2,
+        "beta": 0.45
+      },
+      "perLevel": [
+        {
+          "level": 1,
+          "W": 3.2,
+          "n": 2,
+          "edges": 0,
+          "files": 2,
+          "needSteps": 8,
+          "actualSteps": 8,
+          "p_measured": 0.936,
+          "tokens_per_run": 19480,
+          "usd_per_run": 0.00586,
+          "tokens_per_success": 20210,
+          "usd_per_success": 0.00608,
+          "cost_index": 0.6
+        },
+        {
+          "level": 2,
+          "W": 4,
+          "n": 3,
+          "edges": 1,
+          "files": 2,
+          "needSteps": 9.2,
+          "actualSteps": 9,
+          "p_measured": 0.909,
+          "tokens_per_run": 22500,
+          "usd_per_run": 0.00677,
+          "tokens_per_success": 23736,
+          "usd_per_success": 0.00714,
+          "cost_index": 0.7
+        },
+        {
+          "level": 3,
+          "W": 5.6,
+          "n": 5,
+          "edges": 3,
+          "files": 2,
+          "needSteps": 11.6,
+          "actualSteps": 12,
+          "p_measured": 0.855,
+          "tokens_per_run": 32340,
+          "usd_per_run": 0.00973,
+          "tokens_per_success": 35361,
+          "usd_per_success": 0.01064,
+          "cost_index": 1.05
+        },
+        {
+          "level": 4,
+          "W": 8.72,
+          "n": 7,
+          "edges": 6,
+          "files": 3,
+          "needSteps": 14.8,
+          "actualSteps": 15,
+          "p_measured": 0.795,
+          "tokens_per_run": 43350,
+          "usd_per_run": 0.01305,
+          "tokens_per_success": 49483,
+          "usd_per_success": 0.01489,
+          "cost_index": 1.46
+        },
+        {
+          "level": 5,
+          "W": 10.72,
+          "n": 6,
+          "edges": 4,
+          "files": 4,
+          "needSteps": 14.4,
+          "actualSteps": 14,
+          "p_measured": 0.651,
+          "tokens_per_run": 44750,
+          "usd_per_run": 0.01347,
+          "tokens_per_success": 57933,
+          "usd_per_success": 0.01744,
+          "cost_index": 1.71
+        }
+      ],
+      "summary": {
+        "attempts": 18,
+        "successes": 15,
+        "successRate": 0.833,
+        "total_tokens": 507383,
+        "total_usd": 0.1527,
+        "tokens_per_success": 33826,
+        "usd_per_success": 0.01018,
+        "cost_index": 1
+      },
+      "runs": [
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 19480
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 19480
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 19480
+        },
+        {
+          "level": 1,
+          "ok": true,
+          "tokens": 19480
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 22500
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 22500
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 22500
+        },
+        {
+          "level": 2,
+          "ok": true,
+          "tokens": 22500
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 32340
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 32340
+        },
+        {
+          "level": 3,
+          "ok": true,
+          "tokens": 32340
+        },
+        {
+          "level": 3,
+          "ok": false,
+          "tokens": 17787
+        },
+        {
+          "level": 4,
+          "ok": true,
+          "tokens": 43350
+        },
+        {
+          "level": 4,
+          "ok": true,
+          "tokens": 43350
+        },
+        {
+          "level": 4,
+          "ok": false,
+          "tokens": 23843
+        },
+        {
+          "level": 5,
+          "ok": true,
+          "tokens": 44750
+        },
+        {
+          "level": 5,
+          "ok": true,
+          "tokens": 44750
+        },
+        {
+          "level": 5,
+          "ok": false,
+          "tokens": 24613
+        }
+      ]
+    }
+  ]
+}
